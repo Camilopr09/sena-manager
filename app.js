@@ -1,6 +1,12 @@
+// ========== SUPABASE CONFIGURATION ==========
+const SUPABASE_URL = 'https://qfurwelpzarnpcjxrzql.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmdXJ3ZWxwemFybnBjanhyenFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1MzU2MjYsImV4cCI6MjA4MDExMTYyNn0.xE-eMmLR3EWN8zt8vitTFUyn_ICWMcFSDedVkVwo3xk';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 // ========== DATA STRUCTURES ==========
 let currentUser = null;
 let currentSection = 'resumen';
+let isConnected = false;
 
 // Data stores
 let fichas = [];
@@ -26,9 +32,339 @@ const USERS = [
 ];
 
 // ========== INITIALIZATION ==========
-function initApp() {
-    loadInitialData();
+async function initApp() {
+    updateConnectionStatus('connecting');
+    await connectToSupabase();
     setupEventListeners();
+    setupRealtimeSubscriptions();
+}
+
+async function connectToSupabase() {
+    try {
+        // Test connection
+        const { data, error } = await supabase.from('fichas').select('count');
+        
+        if (error) {
+            console.error('Error connecting to Supabase:', error);
+            updateConnectionStatus('error');
+            // Initialize with sample data if connection fails
+            await initializeSampleData();
+            return;
+        }
+        
+        updateConnectionStatus('connected');
+        isConnected = true;
+        console.log('✅ Connected to Supabase successfully');
+        
+        // Load data from Supabase
+        await loadDataFromSupabase();
+        
+    } catch (err) {
+        console.error('Connection error:', err);
+        updateConnectionStatus('error');
+        await initializeSampleData();
+    }
+}
+
+function updateConnectionStatus(status) {
+    const statusEl = document.getElementById('connectionStatus');
+    if (!statusEl) return;
+    
+    statusEl.className = 'connection-status ' + status;
+    
+    if (status === 'connected') {
+        statusEl.textContent = '✓ Conectado a Supabase';
+    } else if (status === 'connecting') {
+        statusEl.textContent = '⏳ Conectando...';
+    } else if (status === 'error') {
+        statusEl.textContent = '⚠️ Error de conexión';
+    }
+}
+
+async function loadDataFromSupabase() {
+    try {
+        // Load fichas
+        const { data: fichasData, error: fichasError } = await supabase
+            .from('fichas')
+            .select('*')
+            .order('id', { ascending: true });
+        
+        if (fichasError) throw fichasError;
+        fichas = fichasData || [];
+        nextFichaId = fichas.length > 0 ? Math.max(...fichas.map(f => f.id)) + 1 : 1;
+        
+        // Load competencias
+        const { data: competenciasData, error: competenciasError } = await supabase
+            .from('competencias')
+            .select('*')
+            .order('id', { ascending: true });
+        
+        if (competenciasError) throw competenciasError;
+        competencias = competenciasData || [];
+        nextCompetenciaId = competencias.length > 0 ? Math.max(...competencias.map(c => c.id)) + 1 : 1;
+        
+        // Load ambientes
+        const { data: ambientesData, error: ambientesError } = await supabase
+            .from('ambientes')
+            .select('*')
+            .order('id', { ascending: true });
+        
+        if (ambientesError) throw ambientesError;
+        ambientes = ambientesData || [];
+        nextAmbienteId = ambientes.length > 0 ? Math.max(...ambientes.map(a => a.id)) + 1 : 1;
+        
+        // Load instructores
+        const { data: instructoresData, error: instructoresError } = await supabase
+            .from('instructores')
+            .select('*')
+            .order('id', { ascending: true });
+        
+        if (instructoresError) throw instructoresError;
+        instructores = instructoresData || [];
+        nextInstructorId = instructores.length > 0 ? Math.max(...instructores.map(i => i.id)) + 1 : 1;
+        
+        // Load programaciones
+        const { data: programacionesData, error: programacionesError } = await supabase
+            .from('programaciones')
+            .select('*')
+            .order('id', { ascending: true });
+        
+        if (programacionesError) throw programacionesError;
+        programaciones = programacionesData || [];
+        nextProgramacionId = programaciones.length > 0 ? Math.max(...programaciones.map(p => p.id)) + 1 : 1;
+        
+        console.log('✅ Data loaded from Supabase:', {
+            fichas: fichas.length,
+            competencias: competencias.length,
+            ambientes: ambientes.length,
+            instructores: instructores.length,
+            programaciones: programaciones.length
+        });
+        
+        // If no data exists, initialize with sample data
+        if (fichas.length === 0) {
+            await initializeSampleData();
+        }
+        
+    } catch (error) {
+        console.error('Error loading data from Supabase:', error);
+        alert('Error al cargar datos. Reintentando...');
+    }
+}
+
+async function initializeSampleData() {
+    if (fichas.length > 0) return; // Don't initialize if data already exists
+    
+    console.log('📝 Initializing sample data...');
+    
+    // Insert sample fichas
+    const sampleFichas = [
+        {
+            id: 1,
+            nombre: 'Técnico en Mecánica Automotriz',
+            competencia_principal: 'Mecánica Automotriz',
+            ciudad: 'Bogotá',
+            fecha_inicio: '01/01/2025',
+            fecha_fin: '30/06/2025',
+            horas_totales: 120,
+            estado: 'Activo',
+            fecha_creacion: new Date().toLocaleDateString('es-CO')
+        },
+        {
+            id: 2,
+            nombre: 'Técnico en Sistemas Computacionales',
+            competencia_principal: 'Sistemas Computacionales',
+            ciudad: 'Medellín',
+            fecha_inicio: '15/02/2025',
+            fecha_fin: '15/08/2025',
+            horas_totales: 100,
+            estado: 'Activo',
+            fecha_creacion: new Date().toLocaleDateString('es-CO')
+        }
+    ];
+    
+    if (isConnected) {
+        const { error: fichasError } = await supabase.from('fichas').insert(sampleFichas);
+        if (fichasError) console.error('Error inserting fichas:', fichasError);
+    }
+    fichas = sampleFichas;
+    nextFichaId = 3;
+    
+    // Insert sample competencias
+    const sampleCompetencias = [
+        { id: 1, ficha_id: 1, nombre: 'Diagnóstico de Motores', horas_totales: 40 },
+        { id: 2, ficha_id: 1, nombre: 'Sistemas de Frenos', horas_totales: 40 },
+        { id: 3, ficha_id: 1, nombre: 'Eléctrica Automotriz', horas_totales: 40 },
+        { id: 4, ficha_id: 2, nombre: 'Programación Básica', horas_totales: 50 },
+        { id: 5, ficha_id: 2, nombre: 'Redes Computacionales', horas_totales: 50 }
+    ];
+    
+    if (isConnected) {
+        const { error: compError } = await supabase.from('competencias').insert(sampleCompetencias);
+        if (compError) console.error('Error inserting competencias:', compError);
+    }
+    competencias = sampleCompetencias;
+    nextCompetenciaId = 6;
+    
+    // Insert sample ambientes
+    const sampleAmbientes = [
+        { id: 1, codigo: 'A-101', nombre: 'Aula Técnica 1', tipo: 'Aula', capacidad: 30, ciudad: 'Bogotá', disponible: true },
+        { id: 2, codigo: 'LAB-02', nombre: 'Laboratorio Automotriz', tipo: 'Laboratorio', capacidad: 15, ciudad: 'Bogotá', disponible: true },
+        { id: 3, codigo: 'A-201', nombre: 'Aula Sistemas', tipo: 'Aula', capacidad: 25, ciudad: 'Medellín', disponible: true },
+        { id: 4, codigo: 'V-001', nombre: 'Sala Virtual', tipo: 'Virtual', capacidad: 50, ciudad: 'Bogotá', disponible: true }
+    ];
+    
+    if (isConnected) {
+        const { error: ambError } = await supabase.from('ambientes').insert(sampleAmbientes);
+        if (ambError) console.error('Error inserting ambientes:', ambError);
+    }
+    ambientes = sampleAmbientes;
+    nextAmbienteId = 5;
+    
+    // Insert sample instructores
+    const sampleInstructores = [
+        {
+            id: 1,
+            documento: '12345678',
+            nombre: 'Juan García López',
+            profesion: 'Ingeniero Mecánico',
+            celular: '3001234567',
+            correo: 'juan.garcia@email.com',
+            fecha_inicio_contrato: '01/01/2025',
+            fecha_fin_contrato: '31/12/2025',
+            horas_contratadas: 200
+        },
+        {
+            id: 2,
+            documento: '87654321',
+            nombre: 'María López Rodríguez',
+            profesion: 'Técnica en Sistemas',
+            celular: '3109876543',
+            correo: 'maria.lopez@email.com',
+            fecha_inicio_contrato: '15/02/2025',
+            fecha_fin_contrato: '15/08/2025',
+            horas_contratadas: 160
+        },
+        {
+            id: 3,
+            documento: '11111111',
+            nombre: 'Carlos Rodríguez Martínez',
+            profesion: 'Electricista Especializado',
+            celular: '3005551234',
+            correo: 'carlos.rodriguez@email.com',
+            fecha_inicio_contrato: '01/01/2025',
+            fecha_fin_contrato: '30/06/2025',
+            horas_contratadas: 180
+        }
+    ];
+    
+    if (isConnected) {
+        const { error: instError } = await supabase.from('instructores').insert(sampleInstructores);
+        if (instError) console.error('Error inserting instructores:', instError);
+    }
+    instructores = sampleInstructores;
+    nextInstructorId = 4;
+    
+    // Insert sample programaciones
+    const sampleProgramaciones = [
+        {
+            id: 1,
+            ficha_id: 1,
+            competencia_id: 1,
+            instructor_id: 1,
+            ambiente_id: 1,
+            horas: 20,
+            fecha_inicio: '01/02/2025',
+            fecha_fin: '15/03/2025',
+            estado: 'Programada'
+        },
+        {
+            id: 2,
+            ficha_id: 1,
+            competencia_id: 1,
+            instructor_id: 2,
+            ambiente_id: 2,
+            horas: 20,
+            fecha_inicio: '16/03/2025',
+            fecha_fin: '30/04/2025',
+            estado: 'Programada'
+        }
+    ];
+    
+    if (isConnected) {
+        const { error: progError } = await supabase.from('programaciones').insert(sampleProgramaciones);
+        if (progError) console.error('Error inserting programaciones:', progError);
+    }
+    programaciones = sampleProgramaciones;
+    nextProgramacionId = 3;
+    
+    console.log('✅ Sample data initialized');
+}
+
+function setupRealtimeSubscriptions() {
+    if (!isConnected) return;
+    
+    // Subscribe to fichas changes
+    supabase
+        .channel('fichas-channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'fichas' }, async (payload) => {
+            console.log('🔄 Fichas changed:', payload);
+            await loadDataFromSupabase();
+            if (currentSection === 'fichas' || currentSection === 'resumen') {
+                showSection(currentSection);
+            }
+        })
+        .subscribe();
+    
+    // Subscribe to competencias changes
+    supabase
+        .channel('competencias-channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'competencias' }, async (payload) => {
+            console.log('🔄 Competencias changed:', payload);
+            await loadDataFromSupabase();
+            if (currentSection === 'competencias') {
+                showSection(currentSection);
+            }
+        })
+        .subscribe();
+    
+    // Subscribe to ambientes changes
+    supabase
+        .channel('ambientes-channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'ambientes' }, async (payload) => {
+            console.log('🔄 Ambientes changed:', payload);
+            await loadDataFromSupabase();
+            if (currentSection === 'ambientes') {
+                showSection(currentSection);
+            }
+        })
+        .subscribe();
+    
+    // Subscribe to instructores changes
+    supabase
+        .channel('instructores-channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'instructores' }, async (payload) => {
+            console.log('🔄 Instructores changed:', payload);
+            await loadDataFromSupabase();
+            if (currentSection === 'instructores') {
+                showSection(currentSection);
+            }
+        })
+        .subscribe();
+    
+    // Subscribe to programaciones changes
+    supabase
+        .channel('programaciones-channel')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'programaciones' }, async (payload) => {
+            console.log('🔄 Programaciones changed:', payload);
+            await loadDataFromSupabase();
+            if (currentSection === 'programacion' || currentSection === 'reportes') {
+                showSection(currentSection);
+            }
+        })
+        .subscribe();
+    
+    console.log('✅ Real-time subscriptions active');
 }
 
 function loadInitialData() {
@@ -534,7 +870,7 @@ function editFicha(id) {
     document.getElementById('fichaModal').classList.add('active');
 }
 
-function saveFicha(event) {
+async function saveFicha(event) {
     event.preventDefault();
     
     const id = document.getElementById('fichaId').value;
@@ -556,22 +892,46 @@ function saveFicha(event) {
         estado: document.getElementById('fichaEstado').value
     };
     
-    if (id) {
-        const ficha = fichas.find(f => f.id === parseInt(id));
-        Object.assign(ficha, fichaData);
-    } else {
-        fichas.push({
-            id: nextFichaId++,
-            ...fichaData,
-            fecha_creacion: new Date().toLocaleDateString('es-CO')
-        });
+    try {
+        if (id) {
+            // Update existing ficha
+            if (isConnected) {
+                const { error } = await supabase
+                    .from('fichas')
+                    .update(fichaData)
+                    .eq('id', parseInt(id));
+                
+                if (error) throw error;
+            }
+            const ficha = fichas.find(f => f.id === parseInt(id));
+            Object.assign(ficha, fichaData);
+        } else {
+            // Insert new ficha
+            const newFicha = {
+                id: nextFichaId++,
+                ...fichaData,
+                fecha_creacion: new Date().toLocaleDateString('es-CO')
+            };
+            
+            if (isConnected) {
+                const { error } = await supabase
+                    .from('fichas')
+                    .insert([newFicha]);
+                
+                if (error) throw error;
+            }
+            fichas.push(newFicha);
+        }
+        
+        closeFichaModal();
+        updateFichasTable();
+    } catch (error) {
+        console.error('Error saving ficha:', error);
+        alert('Error al guardar la ficha. Por favor intente nuevamente.');
     }
-    
-    closeFichaModal();
-    updateFichasTable();
 }
 
-function deleteFicha(id) {
+async function deleteFicha(id) {
     const tieneCompetencias = competencias.some(c => c.ficha_id === id);
     const tieneProgramaciones = programaciones.some(p => p.ficha_id === id);
     
@@ -582,16 +942,29 @@ function deleteFicha(id) {
     
     if (!confirm(message)) return;
     
-    // Delete related programaciones
-    programaciones = programaciones.filter(p => p.ficha_id !== id);
-    
-    // Delete related competencias
-    competencias = competencias.filter(c => c.ficha_id !== id);
-    
-    // Delete ficha
-    fichas = fichas.filter(f => f.id !== id);
-    
-    updateFichasTable();
+    try {
+        if (isConnected) {
+            // Delete related programaciones
+            await supabase.from('programaciones').delete().eq('ficha_id', id);
+            
+            // Delete related competencias
+            await supabase.from('competencias').delete().eq('ficha_id', id);
+            
+            // Delete ficha
+            const { error } = await supabase.from('fichas').delete().eq('id', id);
+            if (error) throw error;
+        }
+        
+        // Update local data
+        programaciones = programaciones.filter(p => p.ficha_id !== id);
+        competencias = competencias.filter(c => c.ficha_id !== id);
+        fichas = fichas.filter(f => f.id !== id);
+        
+        updateFichasTable();
+    } catch (error) {
+        console.error('Error deleting ficha:', error);
+        alert('Error al eliminar la ficha.');
+    }
 }
 
 function viewFichaDetails(id) {
@@ -853,7 +1226,7 @@ function editCompetencia(id) {
     document.getElementById('competenciaModal').classList.add('active');
 }
 
-function saveCompetencia(event) {
+async function saveCompetencia(event) {
     event.preventDefault();
     
     const id = document.getElementById('competenciaId').value;
@@ -873,29 +1246,52 @@ function saveCompetencia(event) {
         return;
     }
     
-    if (id) {
-        const comp = competencias.find(c => c.id === parseInt(id));
-        const programadas = calcularHorasProgramadas(comp.id);
-        if (horas < programadas) {
-            alert(`No puede establecer horas totales (${horas}) menores a las ya programadas (${programadas})`);
-            return;
+    try {
+        if (id) {
+            const comp = competencias.find(c => c.id === parseInt(id));
+            const programadas = calcularHorasProgramadas(comp.id);
+            if (horas < programadas) {
+                alert(`No puede establecer horas totales (${horas}) menores a las ya programadas (${programadas})`);
+                return;
+            }
+            
+            if (isConnected) {
+                const { error } = await supabase
+                    .from('competencias')
+                    .update({ nombre, horas_totales: horas })
+                    .eq('id', parseInt(id));
+                
+                if (error) throw error;
+            }
+            comp.nombre = nombre;
+            comp.horas_totales = horas;
+        } else {
+            const newComp = {
+                id: nextCompetenciaId++,
+                ficha_id: fichaId,
+                nombre,
+                horas_totales: horas
+            };
+            
+            if (isConnected) {
+                const { error } = await supabase
+                    .from('competencias')
+                    .insert([newComp]);
+                
+                if (error) throw error;
+            }
+            competencias.push(newComp);
         }
-        comp.nombre = nombre;
-        comp.horas_totales = horas;
-    } else {
-        competencias.push({
-            id: nextCompetenciaId++,
-            ficha_id: fichaId,
-            nombre,
-            horas_totales: horas
-        });
+        
+        closeCompetenciaModal();
+        updateCompetenciasTable();
+    } catch (error) {
+        console.error('Error saving competencia:', error);
+        alert('Error al guardar la competencia.');
     }
-    
-    closeCompetenciaModal();
-    updateCompetenciasTable();
 }
 
-function deleteCompetencia(id) {
+async function deleteCompetencia(id) {
     const tieneProgramaciones = programaciones.some(p => p.competencia_id === id);
     
     let message = '¿Está seguro que desea eliminar esta competencia?';
@@ -905,10 +1301,21 @@ function deleteCompetencia(id) {
     
     if (!confirm(message)) return;
     
-    programaciones = programaciones.filter(p => p.competencia_id !== id);
-    competencias = competencias.filter(c => c.id !== id);
-    
-    updateCompetenciasTable();
+    try {
+        if (isConnected) {
+            await supabase.from('programaciones').delete().eq('competencia_id', id);
+            const { error } = await supabase.from('competencias').delete().eq('id', id);
+            if (error) throw error;
+        }
+        
+        programaciones = programaciones.filter(p => p.competencia_id !== id);
+        competencias = competencias.filter(c => c.id !== id);
+        
+        updateCompetenciasTable();
+    } catch (error) {
+        console.error('Error deleting competencia:', error);
+        alert('Error al eliminar la competencia.');
+    }
 }
 
 // AMBIENTES
@@ -1076,7 +1483,7 @@ function editAmbiente(id) {
     document.getElementById('ambienteModal').classList.add('active');
 }
 
-function saveAmbiente(event) {
+async function saveAmbiente(event) {
     event.preventDefault();
     
     const id = document.getElementById('ambienteId').value;
@@ -1102,21 +1509,43 @@ function saveAmbiente(event) {
         disponible: document.getElementById('ambienteDisponible').checked
     };
     
-    if (id) {
-        const amb = ambientes.find(a => a.id === parseInt(id));
-        Object.assign(amb, ambienteData);
-    } else {
-        ambientes.push({
-            id: nextAmbienteId++,
-            ...ambienteData
-        });
+    try {
+        if (id) {
+            if (isConnected) {
+                const { error } = await supabase
+                    .from('ambientes')
+                    .update(ambienteData)
+                    .eq('id', parseInt(id));
+                
+                if (error) throw error;
+            }
+            const amb = ambientes.find(a => a.id === parseInt(id));
+            Object.assign(amb, ambienteData);
+        } else {
+            const newAmb = {
+                id: nextAmbienteId++,
+                ...ambienteData
+            };
+            
+            if (isConnected) {
+                const { error } = await supabase
+                    .from('ambientes')
+                    .insert([newAmb]);
+                
+                if (error) throw error;
+            }
+            ambientes.push(newAmb);
+        }
+        
+        closeAmbienteModal();
+        updateAmbientesTable();
+    } catch (error) {
+        console.error('Error saving ambiente:', error);
+        alert('Error al guardar el ambiente.');
     }
-    
-    closeAmbienteModal();
-    updateAmbientesTable();
 }
 
-function deleteAmbiente(id) {
+async function deleteAmbiente(id) {
     const tieneProgramaciones = programaciones.some(p => p.ambiente_id === id);
     
     let message = '¿Está seguro que desea eliminar este ambiente?';
@@ -1126,12 +1555,24 @@ function deleteAmbiente(id) {
     
     if (!confirm(message)) return;
     
-    if (tieneProgramaciones) {
-        programaciones = programaciones.filter(p => p.ambiente_id !== id);
+    try {
+        if (isConnected) {
+            if (tieneProgramaciones) {
+                await supabase.from('programaciones').delete().eq('ambiente_id', id);
+            }
+            const { error } = await supabase.from('ambientes').delete().eq('id', id);
+            if (error) throw error;
+        }
+        
+        if (tieneProgramaciones) {
+            programaciones = programaciones.filter(p => p.ambiente_id !== id);
+        }
+        ambientes = ambientes.filter(a => a.id !== id);
+        updateAmbientesTable();
+    } catch (error) {
+        console.error('Error deleting ambiente:', error);
+        alert('Error al eliminar el ambiente.');
     }
-    
-    ambientes = ambientes.filter(a => a.id !== id);
-    updateAmbientesTable();
 }
 
 // INSTRUCTORES
@@ -1313,7 +1754,7 @@ function editInstructor(id) {
     document.getElementById('instructorModal').classList.add('active');
 }
 
-function saveInstructor(event) {
+async function saveInstructor(event) {
     event.preventDefault();
     
     const id = document.getElementById('instructorId').value;
@@ -1362,21 +1803,43 @@ function saveInstructor(event) {
         horas_contratadas: parseInt(document.getElementById('instructorHoras').value)
     };
     
-    if (id) {
-        const inst = instructores.find(i => i.id === parseInt(id));
-        Object.assign(inst, instructorData);
-    } else {
-        instructores.push({
-            id: nextInstructorId++,
-            ...instructorData
-        });
+    try {
+        if (id) {
+            if (isConnected) {
+                const { error } = await supabase
+                    .from('instructores')
+                    .update(instructorData)
+                    .eq('id', parseInt(id));
+                
+                if (error) throw error;
+            }
+            const inst = instructores.find(i => i.id === parseInt(id));
+            Object.assign(inst, instructorData);
+        } else {
+            const newInst = {
+                id: nextInstructorId++,
+                ...instructorData
+            };
+            
+            if (isConnected) {
+                const { error } = await supabase
+                    .from('instructores')
+                    .insert([newInst]);
+                
+                if (error) throw error;
+            }
+            instructores.push(newInst);
+        }
+        
+        closeInstructorModal();
+        updateInstructoresTable();
+    } catch (error) {
+        console.error('Error saving instructor:', error);
+        alert('Error al guardar el instructor.');
     }
-    
-    closeInstructorModal();
-    updateInstructoresTable();
 }
 
-function deleteInstructor(id) {
+async function deleteInstructor(id) {
     const tieneProgramaciones = programaciones.some(p => p.instructor_id === id);
     
     let message = '¿Está seguro que desea eliminar este instructor?';
@@ -1386,12 +1849,24 @@ function deleteInstructor(id) {
     
     if (!confirm(message)) return;
     
-    if (tieneProgramaciones) {
-        programaciones = programaciones.filter(p => p.instructor_id !== id);
+    try {
+        if (isConnected) {
+            if (tieneProgramaciones) {
+                await supabase.from('programaciones').delete().eq('instructor_id', id);
+            }
+            const { error } = await supabase.from('instructores').delete().eq('id', id);
+            if (error) throw error;
+        }
+        
+        if (tieneProgramaciones) {
+            programaciones = programaciones.filter(p => p.instructor_id !== id);
+        }
+        instructores = instructores.filter(i => i.id !== id);
+        updateInstructoresTable();
+    } catch (error) {
+        console.error('Error deleting instructor:', error);
+        alert('Error al eliminar el instructor.');
     }
-    
-    instructores = instructores.filter(i => i.id !== id);
-    updateInstructoresTable();
 }
 
 function viewInstructorDetails(id) {
@@ -1830,7 +2305,7 @@ function editProgramacion(id) {
     updateProgInfo();
 }
 
-function saveProgramacion(event) {
+async function saveProgramacion(event) {
     event.preventDefault();
     
     const id = document.getElementById('progId').value;
@@ -1892,27 +2367,59 @@ function saveProgramacion(event) {
         estado
     };
     
-    if (id) {
-        const prog = programaciones.find(p => p.id === parseInt(id));
-        Object.assign(prog, progData);
-    } else {
-        programaciones.push({
-            id: nextProgramacionId++,
-            ...progData
-        });
+    try {
+        if (id) {
+            if (isConnected) {
+                const { error } = await supabase
+                    .from('programaciones')
+                    .update(progData)
+                    .eq('id', parseInt(id));
+                
+                if (error) throw error;
+            }
+            const prog = programaciones.find(p => p.id === parseInt(id));
+            Object.assign(prog, progData);
+        } else {
+            const newProg = {
+                id: nextProgramacionId++,
+                ...progData
+            };
+            
+            if (isConnected) {
+                const { error } = await supabase
+                    .from('programaciones')
+                    .insert([newProg]);
+                
+                if (error) throw error;
+            }
+            programaciones.push(newProg);
+        }
+        
+        closeProgramacionModal();
+        updateProgramacionesTable();
+        updateProgCompetencias();
+    } catch (error) {
+        console.error('Error saving programacion:', error);
+        alert('Error al guardar la programación.');
     }
-    
-    closeProgramacionModal();
-    updateProgramacionesTable();
-    updateProgCompetencias();
 }
 
-function deleteProgramacion(id) {
+async function deleteProgramacion(id) {
     if (!confirm('¿Está seguro que desea eliminar esta programación? Las horas se liberarán.')) return;
     
-    programaciones = programaciones.filter(p => p.id !== id);
-    updateProgramacionesTable();
-    updateProgCompetencias();
+    try {
+        if (isConnected) {
+            const { error } = await supabase.from('programaciones').delete().eq('id', id);
+            if (error) throw error;
+        }
+        
+        programaciones = programaciones.filter(p => p.id !== id);
+        updateProgramacionesTable();
+        updateProgCompetencias();
+    } catch (error) {
+        console.error('Error deleting programacion:', error);
+        alert('Error al eliminar la programación.');
+    }
 }
 
 // REPORTES
