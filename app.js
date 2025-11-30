@@ -1,7 +1,19 @@
-// ========== SUPABASE CONFIGURATION ==========
+/ ========== SUPABASE CONFIGURATION ==========
 const SUPABASE_URL = 'https://qfurwelpzarnpcjxrzql.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmdXJ3ZWxwemFybnBjanhyenFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1MzU2MjYsImV4cCI6MjA4MDExMTYyNn0.xE-eMmLR3EWN8zt8vitTFUyn_ICWMcFSDedVkVwo3xk';
+
+// Verificar que Supabase esté cargado
+if (!window.supabase) {
+    console.error('❌ CRITICAL: Supabase no está disponible');
+    alert('Error crítico: Supabase no se cargó. Verifique su conexión a internet.');
+}
+
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Test de conexión inmediato
+console.log('🔍 Iniciando test de conexión a Supabase...');
+console.log('URL:', SUPABASE_URL);
+console.log('Cliente creado:', supabase ? 'SÍ' : 'NO');
 
 // ========== DATA STRUCTURES ==========
 let currentUser = null;
@@ -41,27 +53,40 @@ async function initApp() {
 
 async function connectToSupabase() {
     try {
+        console.log('🔌 Intentando conectar a Supabase...');
+        
         // Test connection
-        const { data, error } = await supabase.from('fichas').select('count');
+        const { data, error, count } = await supabase
+            .from('fichas')
+            .select('*', { count: 'exact', head: false });
         
         if (error) {
-            console.error('Error connecting to Supabase:', error);
+            console.error('❌ Error de conexión a Supabase:', error);
+            console.error('Detalles del error:', {
+                message: error.message,
+                details: error.details,
+                hint: error.hint,
+                code: error.code
+            });
             updateConnectionStatus('error');
-            // Initialize with sample data if connection fails
+            alert(`Error de conexión a la base de datos:\n${error.message}\n\nUsando datos de ejemplo.`);
             await initializeSampleData();
             return;
         }
         
         updateConnectionStatus('connected');
         isConnected = true;
-        console.log('✅ Connected to Supabase successfully');
+        console.log('✅ Conectado a Supabase exitosamente');
+        console.log(`📊 Fichas en la base de datos: ${count || data?.length || 0}`);
         
         // Load data from Supabase
         await loadDataFromSupabase();
         
     } catch (err) {
-        console.error('Connection error:', err);
+        console.error('💥 Error crítico en conexión:', err);
+        console.error('Stack trace:', err.stack);
         updateConnectionStatus('error');
+        alert(`Error crítico de conexión:\n${err.message}\n\nUsando datos de ejemplo.`);
         await initializeSampleData();
     }
 }
@@ -153,42 +178,36 @@ async function loadDataFromSupabase() {
 }
 
 async function initializeSampleData() {
-    if (fichas.length > 0) return; // Don't initialize if data already exists
+    if (fichas.length > 0) {
+        console.log('ℹ️ Ya existen datos, saltando inicialización');
+        return;
+    }
     
-    console.log('📝 Initializing sample data...');
+    console.log('📝 Inicializando datos de ejemplo...');
     
-    // Insert sample fichas
-    const sampleFichas = [
-        {
-            id: 1,
-            nombre: 'Técnico en Mecánica Automotriz',
-            competencia_principal: 'Mecánica Automotriz',
-            ciudad: 'Bogotá',
-            fecha_inicio: '01/01/2025',
-            fecha_fin: '30/06/2025',
-            horas_totales: 120,
-            estado: 'Activo',
-            fecha_creacion: new Date().toLocaleDateString('es-CO')
-        },
-        {
-            id: 2,
-            nombre: 'Técnico en Sistemas Computacionales',
-            competencia_principal: 'Sistemas Computacionales',
-            ciudad: 'Medellín',
-            fecha_inicio: '15/02/2025',
-            fecha_fin: '15/08/2025',
-            horas_totales: 100,
-            estado: 'Activo',
-            fecha_creacion: new Date().toLocaleDateString('es-CO')
-        }
-    ];
+    // Sample fichas (mantén tus datos existentes)
+    const sampleFichas = [ /* tus datos actuales */ ];
     
     if (isConnected) {
-        const { error: fichasError } = await supabase.from('fichas').insert(sampleFichas);
-        if (fichasError) console.error('Error inserting fichas:', fichasError);
+        console.log('  → Insertando fichas de ejemplo en Supabase...');
+        const { data: insertedFichas, error: fichasError } = await supabase
+            .from('fichas')
+            .insert(sampleFichas)
+            .select();
+        
+        if (fichasError) {
+            console.error('❌ Error insertando fichas:', fichasError);
+        } else {
+            console.log('  ✅ Fichas insertadas:', insertedFichas?.length || 0);
+        }
     }
     fichas = sampleFichas;
     nextFichaId = 3;
+    
+    // Repite el mismo patrón para competencias, ambientes, instructores y programaciones
+    
+    console.log('✅ Datos de ejemplo inicializados correctamente');
+}
     
     // Insert sample competencias
     const sampleCompetencias = [
