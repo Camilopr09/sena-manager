@@ -488,7 +488,45 @@ function setupEventListeners() {
         });
     });
 }
+// ========== MOBILE MENU ==========
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const btn = document.getElementById('mobileMenuBtn');
+    
+    if (sidebar.classList.contains('mobile-open')) {
+        closeMobileMenu();
+    } else {
+        openMobileMenu();
+    }
+}
 
+function openMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const btn = document.getElementById('mobileMenuBtn');
+    
+    sidebar.classList.add('mobile-open');
+    btn.textContent = '✕';
+}
+
+function closeMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const btn = document.getElementById('mobileMenuBtn');
+    
+    sidebar.classList.remove('mobile-open');
+    btn.textContent = '☰';
+}
+
+// Close menu when clicking outside
+document.addEventListener('click', (e) => {
+    const sidebar = document.getElementById('sidebar');
+    const btn = document.getElementById('mobileMenuBtn');
+    
+    if (sidebar && btn && sidebar.classList.contains('mobile-open')) {
+        if (!sidebar.contains(e.target) && !btn.contains(e.target)) {
+            closeMobileMenu();
+        }
+    }
+});
 // ========== LOGIN MANAGEMENT ==========
 function handleLogin(event) {
     event.preventDefault();
