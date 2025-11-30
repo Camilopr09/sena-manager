@@ -321,9 +321,14 @@ async function initializeSampleData() {
 }
 
 function setupRealtimeSubscriptions() {
-    if (!isConnected) return;
+    if (!isConnected) {
+        console.log('⚠️ No conectado a Supabase, saltando suscripciones realtime');
+        return;
+    }
     
-    // Subscribe to fichas changes
+    console.log('📡 Configurando suscripciones realtime...');
+    
+    // Subscribe to all tables changes
     supabase
         .channel('fichas-channel')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'fichas' }, async (payload) => {
@@ -334,6 +339,11 @@ function setupRealtimeSubscriptions() {
             }
         })
         .subscribe();
+    
+   
+    
+    console.log('✅ Suscripciones realtime activas');
+}
     
     // Subscribe to competencias changes
     supabase
@@ -930,60 +940,55 @@ function editFicha(id) {
 async function saveFicha(event) {
     event.preventDefault();
     
-    const id = document.getElementById('fichaId').value;
-    const fechaInicio = document.getElementById('fichaFechaInicio').value;
-    const fechaFin = document.getElementById('fichaFechaFin').value;
-    
-    if (new Date(fechaFin) <= new Date(fechaInicio)) {
-        alert('La fecha de terminación debe ser posterior a la fecha de inicio');
-        return;
-    }
-    
-    const fichaData = {
-        nombre: document.getElementById('fichaNombre').value.trim(),
-        competencia_principal: document.getElementById('fichaCompetencia').value.trim(),
-        ciudad: document.getElementById('fichaCiudad').value,
-        fecha_inicio: fechaInicio.split('-').reverse().join('/'),
-        fecha_fin: fechaFin.split('-').reverse().join('/'),
-        horas_totales: parseInt(document.getElementById('fichaHoras').value),
-        estado: document.getElementById('fichaEstado').value
-    };
+    // ... tu código de validación ...
     
     try {
         if (id) {
-            // Update existing ficha
+            console.log('💾 Actualizando ficha ID:', id);
             if (isConnected) {
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('fichas')
                     .update(fichaData)
-                    .eq('id', parseInt(id));
+                    .eq('id', parseInt(id))
+                    .select();
                 
-                if (error) throw error;
+                if (error) {
+                    console.error('❌ Error actualizando en Supabase:', error);
+                    throw error;
+                }
+                console.log('✅ Ficha actualizada en Supabase:', data);
             }
             const ficha = fichas.find(f => f.id === parseInt(id));
             Object.assign(ficha, fichaData);
+            console.log('✅ Ficha actualizada localmente');
         } else {
-            // Insert new ficha
             const newFicha = {
                 id: nextFichaId++,
                 ...fichaData,
                 fecha_creacion: new Date().toLocaleDateString('es-CO')
             };
             
+            console.log('💾 Insertando nueva ficha:', newFicha);
             if (isConnected) {
-                const { error } = await supabase
+                const { data, error } = await supabase
                     .from('fichas')
-                    .insert([newFicha]);
+                    .insert([newFicha])
+                    .select();
                 
-                if (error) throw error;
+                if (error) {
+                    console.error('❌ Error insertando en Supabase:', error);
+                    throw error;
+                }
+                console.log('✅ Ficha insertada en Supabase:', data);
             }
             fichas.push(newFicha);
+            console.log('✅ Ficha agregada localmente');
         }
         
         closeFichaModal();
         updateFichasTable();
     } catch (error) {
-        console.error('Error saving ficha:', error);
+        console.error('💥 Error guardando ficha:', error);
         alert('Error al guardar la ficha. Por favor intente nuevamente.');
     }
 }
