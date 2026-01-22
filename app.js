@@ -26,6 +26,20 @@ const USERS = [
     { usuario: 'HebertCoordinador', contrasena: 'Dani.Cami@2109#', permisos: 'admin' }
 ];
 
+// ========== SUPABASE CONFIGURATION ==========
+// Initialize Supabase client
+const SUPABASE_URL = 'https://your-project.supabase.co';
+const SUPABASE_ANON_KEY = 'your-anon-key';
+
+let supabase = null;
+
+try {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch (error) {
+    console.warn('⚠️ No se pudo inicializar Supabase. Funcionando sin conexión a BD.');
+    isConnected = false;
+}
+
 // ========== INITIALIZATION ==========
 async function initApp() {
     updateConnectionStatus('connecting');
@@ -38,10 +52,17 @@ async function connectToSupabase() {
     try {
         console.log('🔌 Intentando conectar a Supabase...');
         
+        if (!supabase) {
+            console.warn('⚠️ Supabase no está configurado. Usando datos de ejemplo.');
+            updateConnectionStatus('error');
+            await initializeSampleData();
+            return;
+        }
+        
         // Test connection
         const { data, error, count } = await supabase
             .from('fichas')
-            .select('*', { count: 'exact', head: false });
+            .select('*', { count: 'exact', head: true });
         
         if (error) {
             console.error('❌ Error de conexión a Supabase:', error);
