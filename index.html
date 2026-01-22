@@ -727,23 +727,28 @@
     <!-- Connection Status Indicator -->
     <div id="connectionStatus" class="connection-status connecting">Conectando...</div>
 
-    <script>
-        // Wait for Supabase to load before initializing app
-        if (window.supabase) {
-            console.log('✅ Supabase library loaded successfully');
-        } else {
-            console.error('❌ Supabase library failed to load');
-        }
-    </script>
     <script src="app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-    // Esperar a que Supabase cargue, luego inicializar app
-    window.addEventListener('load', async () => {
-        await initSupabase();
-        initApp();
-    });
-</script>
+    <script>
+        // Wait for Supabase to load, then initialize app
+        window.addEventListener('load', async () => {
+            // Check if Supabase loaded
+            if (typeof window.supabase !== 'undefined') {
+                console.log('✅ Supabase library loaded successfully');
+            } else {
+                console.warn('⚠️ Supabase library not loaded. Will work offline.');
+            }
+            
+            // Initialize Supabase client and then the app
+            if (typeof initSupabase === 'function') {
+                await initSupabase();
+            }
+            
+            // Start the application
+            if (typeof initApp === 'function') {
+                initApp();
+            }
+        });
+    </script>
 
 </body>
 </html>

@@ -1,0 +1,30 @@
+# Configuración local (contiene credenciales sensibles)
+config.js
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDEs y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node modules (si se usa en el futuro)
+node_modules/
+package-lock.json
+
+# Archivos temporales
+*.tmp
+*.bak
+.backup/
+
+# Logs
+*.log
+logs/
+
+# Archivos de caché
+.cache/
+*.cache

@@ -33,11 +33,22 @@ const SUPABASE_ANON_KEY = 'your-anon-key';
 
 let supabase = null;
 
-try {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-} catch (error) {
-    console.warn('⚠️ No se pudo inicializar Supabase. Funcionando sin conexión a BD.');
-    isConnected = false;
+// Initialize Supabase when available
+async function initSupabase() {
+    try {
+        // Wait for Supabase library to load
+        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('✅ Supabase client initialized successfully');
+        } else {
+            console.warn('⚠️ Supabase library not available. Working offline.');
+            isConnected = false;
+        }
+    } catch (error) {
+        console.warn('⚠️ Error initializing Supabase:', error);
+        console.warn('⚠️ Funcionando sin conexión a BD.');
+        isConnected = false;
+    }
 }
 
 // ========== INITIALIZATION ==========
