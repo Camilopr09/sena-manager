@@ -1,3 +1,49 @@
+// ========== SUPABASE INITIALIZATION ==========
+const SUPABASE_URL = 'https://qfurwelpzarnpcjxrzql.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmdXJ3ZWxwemFybnBjanhyenFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1MzU2MjYsImV4cCI6MjA4MDExMTYyNn0.xE-eMmLR3EWN8zt8vitTFUyn_ICWMcFSDedVkVwo3xk';
+
+let supabase = null;
+
+async function initSupabase() {
+    if (!window.supabase) {
+        console.error('Librería Supabase no cargada');
+        return false;
+    }
+    
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('✓ Cliente Supabase inicializado');
+    return true;
+}
+
+// Reemplazar loadInitialData con carga desde Supabase
+async function loadInitialData() {
+    try {
+        // Cargar fichas desde Supabase
+        const { data: fichasData, error: error1 } = await supabase.from('fichas').select('*');
+        if (!error1) fichas = fichasData || [];
+        
+        // Cargar competencias
+        const { data: competenciasData, error: error2 } = await supabase.from('competencias').select('*');
+        if (!error2) competencias = competenciasData || [];
+        
+        // Cargar instructores
+        const { data: instructoresData, error: error3 } = await supabase.from('instructores').select('*');
+        if (!error3) instructores = instructoresData || [];
+        
+        // Cargar ambientes
+        const { data: ambientesData, error: error4 } = await supabase.from('ambientes').select('*');
+        if (!error4) ambientes = ambientesData || [];
+        
+        // Cargar programaciones
+        const { data: programacionesData, error: error5 } = await supabase.from('programaciones').select('*');
+        if (!error5) programaciones = programacionesData || [];
+        
+        console.log('✓ Datos cargados desde Supabase');
+    } catch (err) {
+        console.error('Error cargando datos:', err);
+        // Aquí puedes cargar datos de respaldo si lo necesitas
+    }
+}
 // ========== DATA STRUCTURES ==========
 let currentUser = null;
 let currentSection = 'resumen';

@@ -728,5 +728,14 @@
     <div id="connectionStatus" class="connection-status connecting">Conectando...</div>
 
     <script src="app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+    // Esperar a que Supabase cargue, luego inicializar app
+    window.addEventListener('load', async () => {
+        await initSupabase();
+        initApp();
+    });
+</script>
+
 </body>
 </html>
