@@ -168,8 +168,31 @@ async function initializeSampleData() {
     
     console.log('📝 Inicializando datos de ejemplo...');
     
-    // Sample fichas (mantén tus datos existentes)
-    const sampleFichas = [ /* tus datos actuales */ ];
+    // Sample fichas
+    const sampleFichas = [
+        {
+            id: 1,
+            nombre: 'Técnico en Mecánica Automotriz',
+            competencia_principal: 'Mecánica Automotriz',
+            ciudad: 'Bogotá',
+            fecha_inicio: '01/01/2025',
+            fecha_fin: '30/06/2025',
+            horas_totales: 120,
+            estado: 'Activo',
+            fecha_creacion: new Date().toLocaleDateString('es-CO')
+        },
+        {
+            id: 2,
+            nombre: 'Técnico en Sistemas Computacionales',
+            competencia_principal: 'Sistemas Computacionales',
+            ciudad: 'Medellín',
+            fecha_inicio: '15/02/2025',
+            fecha_fin: '15/08/2025',
+            horas_totales: 100,
+            estado: 'Activo',
+            fecha_creacion: new Date().toLocaleDateString('es-CO')
+        }
+    ];
     
     if (isConnected) {
         console.log('  → Insertando fichas de ejemplo en Supabase...');
@@ -186,11 +209,6 @@ async function initializeSampleData() {
     }
     fichas = sampleFichas;
     nextFichaId = 3;
-    
-    // Repite el mismo patrón para competencias, ambientes, instructores y programaciones
-    
-    console.log('✅ Datos de ejemplo inicializados correctamente');
-}
     
     // Insert sample competencias
     const sampleCompetencias = [
@@ -311,7 +329,7 @@ function setupRealtimeSubscriptions() {
     
     console.log('📡 Configurando suscripciones realtime...');
     
-    // Subscribe to all tables changes
+    // Subscribe to fichas changes
     supabase
         .channel('fichas-channel')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'fichas' }, async (payload) => {
@@ -322,11 +340,6 @@ function setupRealtimeSubscriptions() {
             }
         })
         .subscribe();
-    
-   
-    
-    console.log('✅ Suscripciones realtime activas');
-}
     
     // Subscribe to competencias changes
     supabase
@@ -923,7 +936,40 @@ function editFicha(id) {
 async function saveFicha(event) {
     event.preventDefault();
     
-    // ... tu código de validación ...
+    const id = document.getElementById('fichaId').value;
+    const nombre = document.getElementById('fichaNombre').value.trim();
+    const competencia = document.getElementById('fichaCompetencia').value.trim();
+    const ciudad = document.getElementById('fichaCiudad').value;
+    const fechaInicio = document.getElementById('fichaFechaInicio').value;
+    const fechaFin = document.getElementById('fichaFechaFin').value;
+    const horas = parseInt(document.getElementById('fichaHoras').value);
+    const estado = document.getElementById('fichaEstado').value;
+    
+    if (!nombre || !competencia || !ciudad || !fechaInicio || !fechaFin || !horas) {
+        alert('Por favor complete todos los campos requeridos');
+        return;
+    }
+    
+    if (horas <= 0) {
+        alert('Las horas deben ser mayor a 0');
+        return;
+    }
+    
+    // Convert YYYY-MM-DD to DD/MM/YYYY
+    const [yi, mi, di] = fechaInicio.split('-');
+    const fechaInicioFormato = `${di}/${mi}/${yi}`;
+    const [yf, mf, df] = fechaFin.split('-');
+    const fechaFinFormato = `${df}/${mf}/${yf}`;
+    
+    const fichaData = {
+        nombre,
+        competencia_principal: competencia,
+        ciudad,
+        fecha_inicio: fechaInicioFormato,
+        fecha_fin: fechaFinFormato,
+        horas_totales: horas,
+        estado
+    };
     
     try {
         if (id) {
