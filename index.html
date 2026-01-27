@@ -984,17 +984,24 @@
             event.preventDefault();
             
             const id = document.getElementById('fichaId').value;
+            const codigo = document.getElementById('fichaCodigo').value.trim();
             const nombre = document.getElementById('fichaNombre').value.trim();
             const competencia = document.getElementById('fichaCompetencia').value.trim();
             const ciudad = document.getElementById('fichaCiudad').value;
             const horas = parseInt(document.getElementById('fichaHoras').value);
             const estado = document.getElementById('fichaEstado').value;
             
-            const fechaInicio = document.getElementById('fichaFechaInicio').value; // "2026-02-28"
-const fechaFin = document.getElementById('fichaFechaFin').value;       // "2026-02-28"
-
+            const fechaInicio = document.getElementById('fichaFechaInicio').value;
+            const fechaFin = document.getElementById('fichaFechaFin').value;
+            
+            // Validar que el código sea único si es nuevo
+            if (!id && fichas.some(f => f.codigo === codigo)) {
+                alert('❌ El código ya existe. Usa uno diferente.');
+                return;
+            }
             
             const fichaData = {
+                codigo,
                 nombre,
                 competencia_principal: competencia,
                 ciudad,
@@ -1197,6 +1204,7 @@ const fechaFin = document.getElementById('fichaFechaFin').value;       // "2026-
                             <table>
                                 <thead>
                                     <tr>
+                                        <th>Código</th>
                                         <th>ID</th>
                                         <th>Nombre</th>
                                         <th>Competencia Principal</th>
@@ -1231,7 +1239,8 @@ const fechaFin = document.getElementById('fichaFechaFin').value;       // "2026-
             const filtered = fichas.filter(f => {
                 const matchSearch = f.nombre.toLowerCase().includes(search) || 
                                   f.competencia_principal.toLowerCase().includes(search) ||
-                                  f.ciudad.toLowerCase().includes(search);
+                                  f.ciudad.toLowerCase().includes(search) ||
+                                  f.codigo.toLowerCase().includes(search);
                 const matchEstado = !estado || f.estado === estado;
                 return matchSearch && matchEstado;
             });
@@ -1240,12 +1249,13 @@ const fechaFin = document.getElementById('fichaFechaFin').value;       // "2026-
             if (!tbody) return;
             
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No se encontraron fichas</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No se encontraron fichas</td></tr>';
                 return;
             }
             
             tbody.innerHTML = filtered.map(f => `
                 <tr>
+                    <td><strong style="color: var(--sena-blue);">${f.codigo}</strong></td>
                     <td>${f.id}</td>
                     <td><strong>${f.nombre}</strong></td>
                     <td>${f.competencia_principal}</td>
@@ -1273,6 +1283,14 @@ const fechaFin = document.getElementById('fichaFechaFin').value;       // "2026-
                         </div>
                         <div class="modal-body">
                             <form id="fichaForm" onsubmit="saveFicha(event)">
+                                <div class="form-group">
+                                    <label class="form-label">Código de Ficha *</label>
+                                    <div style="display: flex; gap: 8px;">
+                                        <input type="text" id="fichaCodigo" class="form-control" required placeholder="ej: MECA-2025-001">
+                                        <button type="button" class="btn btn-secondary" onclick="generarCodigoFicha()" style="padding: 12px 16px;">🔄 Generar</button>
+                                    </div>
+                                    <small style="color: var(--sena-gray); margin-top: 4px; display: block;">Ingresa un código único o usa el botón para generar uno automáticamente</small>
+                                </div>
                                 <div class="form-group">
                                     <label class="form-label">Nombre del Curso *</label>
                                     <input type="text" id="fichaNombre" class="form-control" required minlength="3">
@@ -1318,6 +1336,42 @@ const fechaFin = document.getElementById('fichaFechaFin').value;       // "2026-
             `;
         }
 
+        function generarCodigoFicha() {
+            const ciudad = document.getElementById('fichaCiudad').value;
+            const nombre = document.getElementById('fichaNombre').value.trim();
+            
+            if (!ciudad || !nombre) {
+                alert('⚠️ Completa Ciudad y Nombre del Curso primero');
+                return;
+            }
+            
+            // Obtener siglas de la ciudad
+            const siglasciudad = {
+                'Bogotá': 'BOG',
+                'Medellín': 'MED',
+                'Cali': 'CAL',
+                'Barranquilla': 'BAR',
+                'Cartagena': 'CAR',
+                'Otras': 'OTR'
+            }[ciudad] || 'OTR';
+            
+            // Obtener siglas del nombre (primeras letras de cada palabra)
+            const palabras = nombre.split(' ');
+            const siglas = palabras.slice(0, 2).map(p => p.charAt(0).toUpperCase()).join('');
+            
+            // Año actual
+            const year = new Date().getFullYear();
+            
+            // Número secuencial de fichas en esa ciudad
+            const fichasEnCiudad = fichas.filter(f => f.ciudad === ciudad).length + 1;
+            const numero = String(fichasEnCiudad).padStart(3, '0');
+            
+            // Generar código: CIUDAD-SIGLAS-AÑO-NUMERO
+            const codigoGenerado = `${siglasciudad}-${siglas}-${year}-${numero}`;
+            
+            document.getElementById('fichaCodigo').value = codigoGenerado;
+        }
+
         function openFichaModal() {
             document.getElementById('fichaModalTitle').textContent = 'Nueva Ficha';
             document.getElementById('fichaForm').reset();
@@ -1335,15 +1389,14 @@ const fechaFin = document.getElementById('fichaFechaFin').value;       // "2026-
             
             document.getElementById('fichaModalTitle').textContent = 'Editar Ficha';
             document.getElementById('fichaId').value = ficha.id;
+            document.getElementById('fichaCodigo').value = ficha.codigo;
             document.getElementById('fichaNombre').value = ficha.nombre;
             document.getElementById('fichaCompetencia').value = ficha.competencia_principal;
             document.getElementById('fichaCiudad').value = ficha.ciudad;
             
-            // Convert DD/MM/YYYY to YYYY-MM-DD
-            const [di, mi, yi] = ficha.fecha_inicio.split('/');
-            document.getElementById('fichaFechaInicio').value = `${yi}-${mi}-${di}`;
-            const [df, mf, yf] = ficha.fecha_fin.split('/');
-            document.getElementById('fichaFechaFin').value = `${yf}-${mf}-${df}`;
+            // Convert YYYY-MM-DD format
+            document.getElementById('fichaFechaInicio').value = ficha.fecha_inicio;
+            document.getElementById('fichaFechaFin').value = ficha.fecha_fin;
             
             document.getElementById('fichaHoras').value = ficha.horas_totales;
             document.getElementById('fichaEstado').value = ficha.estado;
