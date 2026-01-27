@@ -733,7 +733,7 @@
         };
 
         // ========== GLOBAL VARIABLES ==========
-        let supabase = null;
+        let supabaseClient = null;
         let isConnected = false;
         let currentUser = null;
         let currentSection = 'resumen';
@@ -771,7 +771,7 @@
                     return false;
                 }
                 
-                supabase = window.supabase.createClient(
+                supabaseClient = window.supabase.createClient(
                     SUPABASE_CONFIG.URL,
                     SUPABASE_CONFIG.ANON_KEY
                 );
@@ -790,13 +790,13 @@
             
             for (let attempt = 1; attempt <= SUPABASE_CONFIG.MAX_RETRIES; attempt++) {
                 try {
-                    if (!supabase) {
+                    if (!supabaseClient) {
                         throw new Error('Cliente Supabase no inicializado');
                     }
                     
                     console.log(`📡 Intento ${attempt}/${SUPABASE_CONFIG.MAX_RETRIES}...`);
                     
-                    const { data, error } = await supabase
+                    const { data, error } = await supabaseClient
                         .from('fichas')
                         .select('id')
                         .limit(1);
@@ -854,7 +854,7 @@
                 
                 for (const table of tables) {
                     try {
-                        const { data, error } = await supabase
+                        const { data, error } = await supabaseClient
                             .from(table.name)
                             .select('*')
                             .order('id', { ascending: true });
@@ -994,7 +994,7 @@
                 if (id) {
                     // UPDATE
                     if (isConnected) {
-                        const { error } = await supabase
+                        const { error } = await supabaseClient
                             .from('fichas')
                             .update(fichaData)
                             .eq('id', parseInt(id));
@@ -1013,7 +1013,7 @@
                     };
                     
                     if (isConnected) {
-                        const { error } = await supabase
+                        const { error } = await supabaseClient
                             .from('fichas')
                             .insert([newFicha]);
                         if (error) throw error;
@@ -1036,9 +1036,9 @@
             
             try {
                 if (isConnected) {
-                    await supabase.from('programaciones').delete().eq('ficha_id', id);
-                    await supabase.from('competencias').delete().eq('ficha_id', id);
-                    const { error } = await supabase.from('fichas').delete().eq('id', id);
+                    await supabaseClient.from('programaciones').delete().eq('ficha_id', id);
+                    await supabaseClient.from('competencias').delete().eq('ficha_id', id);
+                    const { error } = await supabaseClient.from('fichas').delete().eq('id', id);
                     if (error) throw error;
                 }
                 
