@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión SENA</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
     <style>
         :root {
             --sena-blue: #003366;
@@ -725,145 +724,15 @@
     </div>
 
     <script>
-        // ========== SUPABASE INITIALIZATION ==========
-        async function initSupabase() {
-            console.log('🔌 Inicializando Supabase...');
-            
-            try {
-                if (!window.supabase || !window.supabase.createClient) {
-                    console.error('❌ Librería Supabase no disponible');
-                    console.log('💡 Ejecuta SupabaseDiagnostics.checkConnection() en consola para diagnosticar');
-                    return false;
-                }
-                
-                supabase = window.supabase.createClient(
-                    SUPABASE_CONFIG.URL,
-                    SUPABASE_CONFIG.ANON_KEY
-                );
-                
-                console.log('✅ Cliente Supabase inicializado');
-                return true;
-            } catch (error) {
-                console.error('❌ Error inicializando:', error.message);
-                return false;
-            }
-        }
+        // ========== SUPABASE CONFIGURATION ==========
+        const SUPABASE_CONFIG = {
+            URL: 'https://qfurwelpzarnpcjxrzql.supabase.co',
+            ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmdXJ3ZWxwemFybnBjanhyenFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1MzU2MjYsImV4cCI6MjA4MDExMTYyNn0.xE-eMmLR3EWN8zt8vitTFUyn_ICWMcFSDedVkVwo3xk',
+            MAX_RETRIES: 3,
+            RETRY_DELAY: 2000
+        };
 
-        // ========== CONNECTION & DATA LOADING ==========
-        async function connectToSupabase() {
-            console.log('🔌 Conectando a Supabase con reintentos...');
-            
-            let lastError = null;
-            
-            for (let attempt = 1; attempt <= SUPABASE_CONFIG.MAX_RETRIES; attempt++) {
-                try {
-                    if (!supabase) {
-                        throw new Error('Cliente Supabase no inicializado');
-                    }
-                    
-                    console.log(`📡 Intento ${attempt}/${SUPABASE_CONFIG.MAX_RETRIES}...`);
-                    
-                    // Test connection con timeout
-                    const controller = new AbortController();
-                    const timeout = setTimeout(() => controller.abort(), 10000);
-                    
-                    const { data, error } = await supabase
-                        .from('fichas')
-                        .select('id')
-                        .limit(1);
-                    
-                    clearTimeout(timeout);
-                    
-                    if (error) {
-                        lastError = error;
-                        
-                        if (error.message.includes('401')) {
-                            console.error('🔐 ERROR: Problemas de autenticación/RLS');
-                            console.error('   Solución: Ve a tu proyecto Supabase > Authentication > Policies');
-                            console.error('   Asegúrate que la tabla "fichas" permite SELECT sin autenticación');
-                            throw new Error('Políticas RLS no configuradas correctamente');
-                        }
-                        
-                        console.warn(`⚠️ Error en intento ${attempt}: ${error.message}`);
-                        
-                        if (attempt < SUPABASE_CONFIG.MAX_RETRIES) {
-                            console.log(`⏳ Reintentando en ${SUPABASE_CONFIG.RETRY_DELAY}ms...`);
-                            await new Promise(r => setTimeout(r, SUPABASE_CONFIG.RETRY_DELAY));
-                            continue;
-                        }
-                        throw error;
-                    }
-                    
-                    console.log('✅ Conexión exitosa a Supabase');
-                    updateConnectionStatus('connected');
-                    isConnected = true;
-                    
-                    await loadDataFromSupabase();
-                    return;
-                    
-                } catch (err) {
-                    lastError = err;
-                    console.error(`❌ Error en intento ${attempt}:`, err.message);
-                    
-                    if (attempt === SUPABASE_CONFIG.MAX_RETRIES) {
-                        console.error('\n❌ No se pudo conectar después de los reintentos');
-                        console.error('Última solución: Usando datos locales');
-                        updateConnectionStatus('error');
-                        isConnected = false;
-                        loadLocalData();
-                        return;
-                    }
-                }
-            }
-        }
-
-        // ========== LOAD DATA FROM SUPABASE ==========
-        async function loadDataFromSupabase() {
-            console.log('📊 Cargando datos de Supabase...');
-            
-            try {
-                // Load all tables
-                const tables = [
-                    { name: 'fichas', store: 'fichas' },
-                    { name: 'competencias', store: 'competencias' },
-                    { name: 'ambientes', store: 'ambientes' },
-                    { name: 'instructores', store: 'instructores' },
-                    { name: 'programaciones', store: 'programaciones' }
-                ];
-                
-                for (const table of tables) {
-                    try {
-                        const { data, error } = await supabase
-                            .from(table.name)
-                            .select('*')
-                            .order('id', { ascending: true });
-                        
-                        if (error) {
-                            console.warn(`⚠️ Error cargando ${table.name}:`, error.message);
-                            continue;
-                        }
-                        
-                        window[table.store] = data || [];
-                        console.log(`✅ ${table.name}: ${data?.length || 0} registros`);
-                        
-                        // Update next ID
-                        if (data && data.length > 0) {
-                            const maxId = Math.max(...data.map(d => d.id || 0));
-                            window[`next${table.store.charAt(0).toUpperCase() + table.store.slice(1)}Id`] = maxId + 1;
-                        }
-                    } catch (err) {
-                        console.error(`❌ Error crítico en ${table.name}:`, err);
-                    }
-                }
-                
-                console.log('📊 Datos cargados correctamente');
-            } catch (error) {
-                console.error('❌ Error cargando datos:', error);
-                throw error;
-            }
-        }
-
-        // ========== GLOBAL VARIABLES - ALL IN ONE PLACE ==========
+        // ========== GLOBAL VARIABLES ==========
         let supabase = null;
         let isConnected = false;
         let currentUser = null;
@@ -892,80 +761,145 @@
             { usuario: 'HebertCoordinador', contrasena: 'Dani.Cami@2109#', permisos: 'admin' }
         ];
 
-        // ========== INITIALIZATION ==========
-        async function initApp() {
-            console.log('🚀 Iniciando aplicación...');
-            updateConnectionStatus('connecting');
+        // ========== SUPABASE INITIALIZATION ==========
+        async function initSupabase() {
+            console.log('🔌 Inicializando Supabase...');
             
-            const supabaseReady = await initSupabase();
-            
-            if (supabaseReady) {
-                await connectToSupabase();
-            } else {
-                console.warn('⚠️ Supabase no disponible');
-                updateConnectionStatus('error');
-                loadLocalData();
+            try {
+                if (!window.supabase || !window.supabase.createClient) {
+                    console.error('❌ Librería Supabase no disponible');
+                    return false;
+                }
+                
+                supabase = window.supabase.createClient(
+                    SUPABASE_CONFIG.URL,
+                    SUPABASE_CONFIG.ANON_KEY
+                );
+                
+                console.log('✅ Cliente Supabase inicializado');
+                return true;
+            } catch (error) {
+                console.error('❌ Error inicializando:', error.message);
+                return false;
             }
-            
-            setupEventListeners();
-            console.log('✅ Aplicación lista');
         }
 
-        function loadLocalData() {
-            console.log('📝 Cargando datos locales de ejemplo...');
-            fichas = [
-                {
-                    id: 1,
-                    nombre: 'Técnico en Mecánica Automotriz',
-                    competencia_principal: 'Mecánica Automotriz',
-                    ciudad: 'Bogotá',
-                    fecha_inicio: '01/01/2025',
-                    fecha_fin: '30/06/2025',
-                    horas_totales: 120,
-                    estado: 'Activo'
-                },
-                {
-                    id: 2,
-                    nombre: 'Técnico en Sistemas Computacionales',
-                    competencia_principal: 'Sistemas Computacionales',
-                    ciudad: 'Medellín',
-                    fecha_inicio: '15/02/2025',
-                    fecha_fin: '15/08/2025',
-                    horas_totales: 100,
-                    estado: 'Activo'
+        // ========== CONNECTION & DATA LOADING ==========
+        async function connectToSupabase() {
+            console.log('🔌 Conectando a Supabase con reintentos...');
+            
+            for (let attempt = 1; attempt <= SUPABASE_CONFIG.MAX_RETRIES; attempt++) {
+                try {
+                    if (!supabase) {
+                        throw new Error('Cliente Supabase no inicializado');
+                    }
+                    
+                    console.log(`📡 Intento ${attempt}/${SUPABASE_CONFIG.MAX_RETRIES}...`);
+                    
+                    const { data, error } = await supabase
+                        .from('fichas')
+                        .select('id')
+                        .limit(1);
+                    
+                    if (error) {
+                        if (error.message.includes('401')) {
+                            console.error('🔐 ERROR: Problemas de autenticación/RLS');
+                            console.error('   Solución: Ve a tu proyecto Supabase > Authentication > Policies');
+                            console.error('   Asegúrate que la tabla "fichas" permite SELECT sin autenticación');
+                            throw new Error('Políticas RLS no configuradas correctamente');
+                        }
+                        
+                        console.warn(`⚠️ Error en intento ${attempt}: ${error.message}`);
+                        
+                        if (attempt < SUPABASE_CONFIG.MAX_RETRIES) {
+                            console.log(`⏳ Reintentando en ${SUPABASE_CONFIG.RETRY_DELAY}ms...`);
+                            await new Promise(r => setTimeout(r, SUPABASE_CONFIG.RETRY_DELAY));
+                            continue;
+                        }
+                        throw error;
+                    }
+                    
+                    console.log('✅ Conexión exitosa a Supabase');
+                    updateConnectionStatus('connected');
+                    isConnected = true;
+                    
+                    await loadDataFromSupabase();
+                    return;
+                    
+                } catch (err) {
+                    console.error(`❌ Error en intento ${attempt}:`, err.message);
+                    
+                    if (attempt === SUPABASE_CONFIG.MAX_RETRIES) {
+                        console.error('\n❌ No se pudo conectar - usando datos locales');
+                        updateConnectionStatus('error');
+                        isConnected = false;
+                        loadLocalData();
+                        return;
+                    }
                 }
-            ];
-            nextFichaId = 3;
-            
-            competencias = [
-                { id: 1, ficha_id: 1, nombre: 'Diagnóstico de Motores', horas_totales: 40 },
-                { id: 2, ficha_id: 1, nombre: 'Sistemas de Frenos', horas_totales: 40 },
-                { id: 3, ficha_id: 2, nombre: 'Programación Básica', horas_totales: 50 }
-            ];
-            nextCompetenciaId = 4;
-            
-            ambientes = [
-                { id: 1, codigo: 'A-101', nombre: 'Aula Técnica 1', tipo: 'Aula', capacidad: 30, ciudad: 'Bogotá', disponible: true },
-                { id: 2, codigo: 'LAB-02', nombre: 'Laboratorio Automotriz', tipo: 'Laboratorio', capacidad: 15, ciudad: 'Bogotá', disponible: true }
-            ];
-            nextAmbienteId = 3;
-            
-            instructores = [
-                {
-                    id: 1,
-                    documento: '12345678',
-                    nombre: 'Juan García López',
-                    profesion: 'Ingeniero Mecánico',
-                    celular: '3001234567',
-                    correo: 'juan.garcia@email.com',
-                    fecha_inicio_contrato: '01/01/2025',
-                    fecha_fin_contrato: '31/12/2025',
-                    horas_contratadas: 200
-                }
-            ];
-            nextInstructorId = 2;
+            }
         }
 
+        async function loadDataFromSupabase() {
+            console.log('📊 Cargando datos de Supabase...');
+            
+            try {
+                const tables = [
+                    { name: 'fichas', store: 'fichas' },
+                    { name: 'competencias', store: 'competencias' },
+                    { name: 'ambientes', store: 'ambientes' },
+                    { name: 'instructores', store: 'instructores' },
+                    { name: 'programaciones', store: 'programaciones' }
+                ];
+                
+                for (const table of tables) {
+                    try {
+                        const { data, error } = await supabase
+                            .from(table.name)
+                            .select('*')
+                            .order('id', { ascending: true });
+                        
+                        if (error) {
+                            console.warn(`⚠️ Error cargando ${table.name}:`, error.message);
+                            continue;
+                        }
+                        
+                        window[table.store] = data || [];
+                        console.log(`✅ ${table.name}: ${data?.length || 0} registros`);
+                        
+                        if (data && data.length > 0) {
+                            const maxId = Math.max(...data.map(d => d.id || 0));
+                            const storeName = `next${table.store.charAt(0).toUpperCase() + table.store.slice(1)}Id`;
+                            window[storeName] = maxId + 1;
+                        }
+                    } catch (err) {
+                        console.error(`❌ Error en ${table.name}:`, err);
+                    }
+                }
+                
+                console.log('📊 Datos cargados correctamente');
+            } catch (error) {
+                console.error('❌ Error cargando datos:', error);
+                throw error;
+            }
+        }
+
+        function updateConnectionStatus(status) {
+            const statusEl = document.getElementById('connectionStatus');
+            if (!statusEl) return;
+            
+            statusEl.className = 'connection-status ' + status;
+            
+            if (status === 'connected') {
+                statusEl.textContent = '✅ Conectado';
+            } else if (status === 'connecting') {
+                statusEl.textContent = '⏳ Conectando...';
+            } else if (status === 'error') {
+                statusEl.textContent = '❌ Error de conexión';
+            }
+        }
+
+        // ========== EVENT LISTENERS ==========
         function setupEventListeners() {
             document.querySelectorAll('.menu-item[data-section]').forEach(item => {
                 item.addEventListener('click', () => {
@@ -1472,6 +1406,24 @@
         }
 
         // ========== PAGE INITIALIZATION ==========
+        async function initApp() {
+            console.log('🚀 Iniciando aplicación...');
+            updateConnectionStatus('connecting');
+            
+            const supabaseReady = await initSupabase();
+            
+            if (supabaseReady) {
+                await connectToSupabase();
+            } else {
+                console.warn('⚠️ Supabase no disponible');
+                updateConnectionStatus('error');
+                loadLocalData();
+            }
+            
+            setupEventListeners();
+            console.log('✅ Aplicación lista');
+        }
+
         window.addEventListener('load', initApp);
     </script>
 </body>
