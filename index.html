@@ -975,10 +975,9 @@
             const horas = parseInt(document.getElementById('fichaHoras').value);
             const estado = document.getElementById('fichaEstado').value;
             
-            const fechaInicio = document.getElementById('fichaFechaInicio').value
-                .split('-').reverse().join('/');
-            const fechaFin = document.getElementById('fichaFechaFin').value
-                .split('-').reverse().join('/');
+            const fechaInicio = document.getElementById('fichaFechaInicio').value; // "2026-02-28"
+const fechaFin = document.getElementById('fichaFechaFin').value;       // "2026-02-28"
+
             
             const fichaData = {
                 nombre,
