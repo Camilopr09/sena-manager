@@ -1285,11 +1285,8 @@
                             <form id="fichaForm" onsubmit="saveFicha(event)">
                                 <div class="form-group">
                                     <label class="form-label">Código de Ficha *</label>
-                                    <div style="display: flex; gap: 8px;">
-                                        <input type="text" id="fichaCodigo" class="form-control" required placeholder="ej: MECA-2025-001">
-                                        <button type="button" class="btn btn-secondary" onclick="generarCodigoFicha()" style="padding: 12px 16px;">🔄 Generar</button>
-                                    </div>
-                                    <small style="color: var(--sena-gray); margin-top: 4px; display: block;">Ingresa un código único o usa el botón para generar uno automáticamente</small>
+                                    <input type="text" id="fichaCodigo" class="form-control" required placeholder="ej: BOG-TM-2025-001">
+                                    <small style="color: var(--sena-gray); margin-top: 4px; display: block;">Ingresa un código único para identificar la ficha</small>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Nombre del Curso *</label>
@@ -1336,72 +1333,7 @@
             `;
         }
 
-        function generarCodigoFicha() {
-            const ciudad = document.getElementById('fichaCiudad').value;
-            const nombre = document.getElementById('fichaNombre').value.trim();
-            
-            if (!ciudad || !nombre) {
-                alert('⚠️ Completa Ciudad y Nombre del Curso primero');
-                return;
-            }
-            
-            // Obtener siglas de la ciudad
-            const siglasciudad = {
-                'Bogotá': 'BOG',
-                'Medellín': 'MED',
-                'Cali': 'CAL',
-                'Barranquilla': 'BAR',
-                'Cartagena': 'CAR',
-                'Otras': 'OTR'
-            }[ciudad] || 'OTR';
-            
-            // Obtener siglas del nombre (primeras letras de cada palabra)
-            const palabras = nombre.split(' ');
-            const siglas = palabras.slice(0, 2).map(p => p.charAt(0).toUpperCase()).join('');
-            
-            // Año actual
-            const year = new Date().getFullYear();
-            
-            // Número secuencial de fichas en esa ciudad
-            const fichasEnCiudad = fichas.filter(f => f.ciudad === ciudad).length + 1;
-            const numero = String(fichasEnCiudad).padStart(3, '0');
-            
-            // Generar código: CIUDAD-SIGLAS-AÑO-NUMERO
-            const codigoGenerado = `${siglasciudad}-${siglas}-${year}-${numero}`;
-            
-            document.getElementById('fichaCodigo').value = codigoGenerado;
-        }
-
-        function openFichaModal() {
-            document.getElementById('fichaModalTitle').textContent = 'Nueva Ficha';
-            document.getElementById('fichaForm').reset();
-            document.getElementById('fichaId').value = '';
-            document.getElementById('fichaModal').classList.add('active');
-        }
-
-        function closeFichaModal() {
-            document.getElementById('fichaModal').classList.remove('active');
-        }
-
-        function editFicha(id) {
-            const ficha = fichas.find(f => f.id === id);
-            if (!ficha) return;
-            
-            document.getElementById('fichaModalTitle').textContent = 'Editar Ficha';
-            document.getElementById('fichaId').value = ficha.id;
-            document.getElementById('fichaCodigo').value = ficha.codigo;
-            document.getElementById('fichaNombre').value = ficha.nombre;
-            document.getElementById('fichaCompetencia').value = ficha.competencia_principal;
-            document.getElementById('fichaCiudad').value = ficha.ciudad;
-            
-            // Convert YYYY-MM-DD format
-            document.getElementById('fichaFechaInicio').value = ficha.fecha_inicio;
-            document.getElementById('fichaFechaFin').value = ficha.fecha_fin;
-            
-            document.getElementById('fichaHoras').value = ficha.horas_totales;
-            document.getElementById('fichaEstado').value = ficha.estado;
-            document.getElementById('fichaModal').classList.add('active');
-        }
+        // ...existing code...
 
         // COMPETENCIAS
         function renderCompetencias(container) {
