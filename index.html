@@ -864,14 +864,29 @@
                             continue;
                         }
                         
-                        window[table.store] = data || [];
-                        console.log(`✅ ${table.name}: ${data?.length || 0} registros`);
-                        
-                        if (data && data.length > 0) {
-                            const maxId = Math.max(...data.map(d => d.id || 0));
-                            const storeName = `next${table.store.charAt(0).toUpperCase() + table.store.slice(1)}Id`;
-                            window[storeName] = maxId + 1;
-                        }
+                        switch (table.store) {
+  case 'fichas':
+    fichas = data || [];
+    nextFichaId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
+    break;
+  case 'competencias':
+    competencias = data || [];
+    nextCompetenciaId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
+    break;
+  case 'ambientes':
+    ambientes = data || [];
+    nextAmbienteId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
+    break;
+  case 'instructores':
+    instructores = data || [];
+    nextInstructorId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
+    break;
+  case 'programaciones':
+    programaciones = data || [];
+    nextProgramacionId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
+    break;
+}
+
                     } catch (err) {
                         console.error(`❌ Error en ${table.name}:`, err);
                     }
