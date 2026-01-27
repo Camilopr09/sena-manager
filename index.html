@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión SENA</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     <style>
         :root {
             --sena-blue: #003366;
@@ -724,9 +725,143 @@
     </div>
 
     <script>
-        // ========== SUPABASE CONFIGURATION ==========
-        const SUPABASE_URL = 'https://qfurwelpzarnpcjxrzql.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmdXJ3ZWxwemFybnBjanhyenFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1MzU2MjYsImV4cCI6MjA4MDExMTYyNn0.xE-eMmLR3EWN8zt8vitTFUyn_ICWMcFSDedVkVwo3xk';
+        // ========== SUPABASE INITIALIZATION ==========
+        async function initSupabase() {
+            console.log('🔌 Inicializando Supabase...');
+            
+            try {
+                if (!window.supabase || !window.supabase.createClient) {
+                    console.error('❌ Librería Supabase no disponible');
+                    console.log('💡 Ejecuta SupabaseDiagnostics.checkConnection() en consola para diagnosticar');
+                    return false;
+                }
+                
+                supabase = window.supabase.createClient(
+                    SUPABASE_CONFIG.URL,
+                    SUPABASE_CONFIG.ANON_KEY
+                );
+                
+                console.log('✅ Cliente Supabase inicializado');
+                return true;
+            } catch (error) {
+                console.error('❌ Error inicializando:', error.message);
+                return false;
+            }
+        }
+
+        // ========== CONNECTION & DATA LOADING ==========
+        async function connectToSupabase() {
+            console.log('🔌 Conectando a Supabase con reintentos...');
+            
+            let lastError = null;
+            
+            for (let attempt = 1; attempt <= SUPABASE_CONFIG.MAX_RETRIES; attempt++) {
+                try {
+                    if (!supabase) {
+                        throw new Error('Cliente Supabase no inicializado');
+                    }
+                    
+                    console.log(`📡 Intento ${attempt}/${SUPABASE_CONFIG.MAX_RETRIES}...`);
+                    
+                    // Test connection con timeout
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 10000);
+                    
+                    const { data, error } = await supabase
+                        .from('fichas')
+                        .select('id')
+                        .limit(1);
+                    
+                    clearTimeout(timeout);
+                    
+                    if (error) {
+                        lastError = error;
+                        
+                        if (error.message.includes('401')) {
+                            console.error('🔐 ERROR: Problemas de autenticación/RLS');
+                            console.error('   Solución: Ve a tu proyecto Supabase > Authentication > Policies');
+                            console.error('   Asegúrate que la tabla "fichas" permite SELECT sin autenticación');
+                            throw new Error('Políticas RLS no configuradas correctamente');
+                        }
+                        
+                        console.warn(`⚠️ Error en intento ${attempt}: ${error.message}`);
+                        
+                        if (attempt < SUPABASE_CONFIG.MAX_RETRIES) {
+                            console.log(`⏳ Reintentando en ${SUPABASE_CONFIG.RETRY_DELAY}ms...`);
+                            await new Promise(r => setTimeout(r, SUPABASE_CONFIG.RETRY_DELAY));
+                            continue;
+                        }
+                        throw error;
+                    }
+                    
+                    console.log('✅ Conexión exitosa a Supabase');
+                    updateConnectionStatus('connected');
+                    isConnected = true;
+                    
+                    await loadDataFromSupabase();
+                    return;
+                    
+                } catch (err) {
+                    lastError = err;
+                    console.error(`❌ Error en intento ${attempt}:`, err.message);
+                    
+                    if (attempt === SUPABASE_CONFIG.MAX_RETRIES) {
+                        console.error('\n❌ No se pudo conectar después de los reintentos');
+                        console.error('Última solución: Usando datos locales');
+                        updateConnectionStatus('error');
+                        isConnected = false;
+                        loadLocalData();
+                        return;
+                    }
+                }
+            }
+        }
+
+        // ========== LOAD DATA FROM SUPABASE ==========
+        async function loadDataFromSupabase() {
+            console.log('📊 Cargando datos de Supabase...');
+            
+            try {
+                // Load all tables
+                const tables = [
+                    { name: 'fichas', store: 'fichas' },
+                    { name: 'competencias', store: 'competencias' },
+                    { name: 'ambientes', store: 'ambientes' },
+                    { name: 'instructores', store: 'instructores' },
+                    { name: 'programaciones', store: 'programaciones' }
+                ];
+                
+                for (const table of tables) {
+                    try {
+                        const { data, error } = await supabase
+                            .from(table.name)
+                            .select('*')
+                            .order('id', { ascending: true });
+                        
+                        if (error) {
+                            console.warn(`⚠️ Error cargando ${table.name}:`, error.message);
+                            continue;
+                        }
+                        
+                        window[table.store] = data || [];
+                        console.log(`✅ ${table.name}: ${data?.length || 0} registros`);
+                        
+                        // Update next ID
+                        if (data && data.length > 0) {
+                            const maxId = Math.max(...data.map(d => d.id || 0));
+                            window[`next${table.store.charAt(0).toUpperCase() + table.store.slice(1)}Id`] = maxId + 1;
+                        }
+                    } catch (err) {
+                        console.error(`❌ Error crítico en ${table.name}:`, err);
+                    }
+                }
+                
+                console.log('📊 Datos cargados correctamente');
+            } catch (error) {
+                console.error('❌ Error cargando datos:', error);
+                throw error;
+            }
+        }
 
         // ========== GLOBAL VARIABLES - ALL IN ONE PLACE ==========
         let supabase = null;
@@ -757,156 +892,23 @@
             { usuario: 'HebertCoordinador', contrasena: 'Dani.Cami@2109#', permisos: 'admin' }
         ];
 
-        // ========== SUPABASE INITIALIZATION ==========
-        async function initSupabase() {
-            console.log('🔌 Inicializando Supabase...');
-            
-            try {
-                if (!window.supabase || !window.supabase.createClient) {
-                    console.warn('⚠️ Librería Supabase no disponible');
-                    return false;
-                }
-                
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('✅ Cliente Supabase inicializado correctamente');
-                return true;
-            } catch (error) {
-                console.error('❌ Error inicializando Supabase:', error);
-                return false;
-            }
-        }
-
-        // ========== CONNECTION & DATA LOADING ==========
-        async function connectToSupabase() {
-            console.log('🔌 Intentando conectar a Supabase...');
-            
-            try {
-                if (!supabase) {
-                    console.warn('⚠️ Cliente Supabase no inicializado');
-                    updateConnectionStatus('error');
-                    isConnected = false;
-                    return;
-                }
-                
-                // Test connection
-                const { data, error } = await supabase
-                    .from('fichas')
-                    .select('count', { count: 'exact', head: true });
-                
-                if (error) {
-                    console.error('❌ Error de conexión:', error.message);
-                    console.error('Detalles:', error);
-                    updateConnectionStatus('error');
-                    isConnected = false;
-                    alert('⚠️ Error al conectar con Supabase:\n' + error.message + '\n\nVerifica:\n1. Las credenciales\n2. Las políticas RLS\n3. La conexión a internet');
-                    return;
-                }
-                
-                console.log('✅ Conexión exitosa a Supabase');
-                updateConnectionStatus('connected');
-                isConnected = true;
-                
-                // Load data
-                await loadDataFromSupabase();
-                
-            } catch (err) {
-                console.error('💥 Error crítico:', err);
-                updateConnectionStatus('error');
-                isConnected = false;
-            }
-        }
-
-        function updateConnectionStatus(status) {
-            const statusEl = document.getElementById('connectionStatus');
-            if (!statusEl) return;
-            
-            statusEl.className = 'connection-status ' + status;
-            
-            if (status === 'connected') {
-                statusEl.textContent = '✅ Conectado a Supabase';
-                statusEl.style.color = '#27ae60';
-            } else if (status === 'connecting') {
-                statusEl.textContent = '⏳ Conectando...';
-                statusEl.style.color = '#f39c12';
-            } else if (status === 'error') {
-                statusEl.textContent = '❌ Error de conexión';
-                statusEl.style.color = '#e74c3c';
-            }
-        }
-
-        async function loadDataFromSupabase() {
-            console.log('📊 Cargando datos de Supabase...');
-            
-            try {
-                // Load fichas
-                const { data: fichasData, error: e1 } = await supabase
-                    .from('fichas').select('*').order('id', { ascending: true });
-                if (e1) throw e1;
-                fichas = fichasData || [];
-                nextFichaId = fichas.length > 0 ? Math.max(...fichas.map(f => f.id)) + 1 : 1;
-                
-                // Load competencias
-                const { data: compData, error: e2 } = await supabase
-                    .from('competencias').select('*').order('id', { ascending: true });
-                if (e2) throw e2;
-                competencias = compData || [];
-                nextCompetenciaId = competencias.length > 0 ? Math.max(...competencias.map(c => c.id)) + 1 : 1;
-                
-                // Load ambientes
-                const { data: ambData, error: e3 } = await supabase
-                    .from('ambientes').select('*').order('id', { ascending: true });
-                if (e3) throw e3;
-                ambientes = ambData || [];
-                nextAmbienteId = ambientes.length > 0 ? Math.max(...ambientes.map(a => a.id)) + 1 : 1;
-                
-                // Load instructores
-                const { data: instData, error: e4 } = await supabase
-                    .from('instructores').select('*').order('id', { ascending: true });
-                if (e4) throw e4;
-                instructores = instData || [];
-                nextInstructorId = instructores.length > 0 ? Math.max(...instructores.map(i => i.id)) + 1 : 1;
-                
-                // Load programaciones
-                const { data: progData, error: e5 } = await supabase
-                    .from('programaciones').select('*').order('id', { ascending: true });
-                if (e5) throw e5;
-                programaciones = progData || [];
-                nextProgramacionId = programaciones.length > 0 ? Math.max(...programaciones.map(p => p.id)) + 1 : 1;
-                
-                console.log('✅ Datos cargados:', {
-                    fichas: fichas.length,
-                    competencias: competencias.length,
-                    ambientes: ambientes.length,
-                    instructores: instructores.length,
-                    programaciones: programaciones.length
-                });
-                
-            } catch (error) {
-                console.error('❌ Error cargando datos:', error);
-                throw error;
-            }
-        }
-
         // ========== INITIALIZATION ==========
         async function initApp() {
             console.log('🚀 Iniciando aplicación...');
             updateConnectionStatus('connecting');
             
-            // Initialize Supabase
             const supabaseReady = await initSupabase();
             
             if (supabaseReady) {
-                // Connect to database
                 await connectToSupabase();
             } else {
-                console.warn('⚠️ Supabase no disponible - modo offline');
+                console.warn('⚠️ Supabase no disponible');
                 updateConnectionStatus('error');
-                // Load sample data if Supabase not available
                 loadLocalData();
             }
             
             setupEventListeners();
-            console.log('✅ Aplicación inicializada');
+            console.log('✅ Aplicación lista');
         }
 
         function loadLocalData() {
