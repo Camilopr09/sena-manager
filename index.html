@@ -2027,6 +2027,10 @@
                     
                     <div class="filters">
                         <div class="filter-item">
+                            <label>Buscar por Código de Ficha</label>
+                            <input type="text" id="searchProgramacionCodigo" class="search-box" placeholder="Buscar por código..." onkeyup="filterProgramaciones()">
+                        </div>
+                        <div class="filter-item">
                             <label>Filtrar por Ficha</label>
                             <select id="filterProgramacionFicha" class="form-control" onchange="filterProgramaciones()">
                                 <option value="">Todas las fichas</option>
@@ -2047,7 +2051,7 @@
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>ID</th>
+                                        <th>Código Ficha</th>
                                         <th>Ficha</th>
                                         <th>Competencia</th>
                                         <th>Instructor</th>
@@ -2067,8 +2071,7 @@
                 
                 ${getProgramacionModal()}
             `;
-            
-            updateProgramacionesTable();
+    updateProgramacionesTable();
         }
 
         function filterProgramaciones() {
@@ -2078,30 +2081,33 @@
         function updateProgramacionesTable() {
             const fichaId = document.getElementById('filterProgramacionFicha')?.value || '';
             const estado = document.getElementById('filterProgramacionEstado')?.value || '';
-            
+            const searchCodigo = document.getElementById('searchProgramacionCodigo')?.value.toLowerCase() || '';
+
             const filtered = programaciones.filter(p => {
+                const ficha = fichas.find(f => f.id === p.ficha_id);
                 const matchFicha = !fichaId || p.ficha_id === parseInt(fichaId);
                 const matchEstado = !estado || p.estado === estado;
-                return matchFicha && matchEstado;
+                const matchCodigo = !searchCodigo || (ficha && ficha.codigo && ficha.codigo.toLowerCase().includes(searchCodigo));
+                return matchFicha && matchEstado && matchCodigo;
             });
-            
+
             const tbody = document.getElementById('programacionesTableBody');
             if (!tbody) return;
-            
+
             if (filtered.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No hay programaciones registradas</td></tr>';
                 return;
             }
-            
+
             tbody.innerHTML = filtered.map(p => {
                 const ficha = fichas.find(f => f.id === p.ficha_id);
                 const competencia = competencias.find(c => c.id === p.competencia_id);
                 const instructor = instructores.find(i => i.id === p.instructor_id);
                 const ambiente = ambientes.find(a => a.id === p.ambiente_id);
-                
+
                 return `
                     <tr>
-                        <td>${p.id}</td>
+                        <td>${ficha?.codigo || ''}</td>
                         <td>${ficha?.nombre || 'N/A'}</td>
                         <td>${competencia?.nombre || 'N/A'}</td>
                         <td>${instructor?.nombre || 'N/A'}</td>
