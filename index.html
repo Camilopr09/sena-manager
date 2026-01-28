@@ -1809,6 +1809,7 @@
                                         <th>Profesión</th>
                                         <th>Celular</th>
                                         <th>Correo</th>
+                                        <th>Horario</th>
                                         <th>Horas Contratadas</th>
                                         <th>Horas Disponibles</th>
                                         <th>Acciones</th>
@@ -1832,7 +1833,7 @@
             if (!tbody) return;
             
             if (instructores.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No hay instructores registrados</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No hay instructores registrados</td></tr>';
                 return;
             }
             
@@ -1846,6 +1847,7 @@
                         <td>${i.profesion}</td>
                         <td>${i.celular}</td>
                         <td>${i.correo}</td>
+                        <td>${i.horario || ''}</td>
                         <td>${i.horas_contratadas}h</td>
                         <td><span style="color: ${horasDisponibles < 10 ? '#e74c3c' : '#27ae60'}; font-weight: bold;">${horasDisponibles}h</span></td>
                         <td>
@@ -1890,6 +1892,10 @@
                                     <input type="email" id="instructorCorreo" class="form-control" required>
                                 </div>
                                 <div class="form-group">
+                                    <label class="form-label">Horario</label>
+                                    <input type="text" id="instructorHorario" class="form-control" placeholder="Ej: Lunes a Viernes 7am-4pm">
+                                </div>
+                                <div class="form-group">
                                     <label class="form-label">Fecha Inicio Contrato *</label>
                                     <input type="date" id="instructorFechaInicio" class="form-control" required>
                                 </div>
@@ -1921,6 +1927,7 @@
             const profesion = document.getElementById('instructorProfesion').value.trim();
             const celular = document.getElementById('instructorCelular').value.trim();
             const correo = document.getElementById('instructorCorreo').value.trim();
+            const horario = document.getElementById('instructorHorario').value.trim();
             const fechaInicio = document.getElementById('instructorFechaInicio').value;
             const fechaFin = document.getElementById('instructorFechaFin').value;
             const horas = parseInt(document.getElementById('instructorHoras').value);
@@ -1936,6 +1943,7 @@
             
             const instData = {
                 documento, nombre, profesion, celular, correo,
+                horario,
                 fecha_inicio_contrato: fechaInicio,
                 fecha_fin_contrato: fechaFin,
                 horas_contratadas: horas
@@ -2001,6 +2009,7 @@
             document.getElementById('instructorProfesion').value = inst.profesion;
             document.getElementById('instructorCelular').value = inst.celular;
             document.getElementById('instructorCorreo').value = inst.correo;
+            document.getElementById('instructorHorario').value = inst.horario || '';
             document.getElementById('instructorFechaInicio').value = inst.fecha_inicio_contrato;
             document.getElementById('instructorFechaFin').value = inst.fecha_fin_contrato;
             document.getElementById('instructorHoras').value = inst.horas_contratadas;
