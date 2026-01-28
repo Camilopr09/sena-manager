@@ -986,7 +986,6 @@
             const id = document.getElementById('fichaId').value;
             const codigo = document.getElementById('fichaCodigo').value.trim();
             const nombre = document.getElementById('fichaNombre').value.trim();
-            const competencia = document.getElementById('fichaCompetencia').value.trim();
             const ciudad = document.getElementById('fichaCiudad').value;
             const corregimiento = document.getElementById('fichaCorregimiento').value.trim() || 'Principal';
             const horas = parseInt(document.getElementById('fichaHoras').value);
@@ -1004,7 +1003,6 @@
             const fichaData = {
                 codigo,
                 nombre,
-                competencia_principal: competencia,
                 ciudad,
                 corregimiento,
                 fecha_inicio: fechaInicio,
@@ -1209,8 +1207,7 @@
                                         <th>Código</th>
                                         <th>ID</th>
                                         <th>Nombre</th>
-                                        <th>Competencia Principal</th>
-                                        <th>Ciudad</th>
+                                        <th>Ciudad/Corregimiento</th>
                                         <th>Fecha Inicio</th>
                                         <th>Horas</th>
                                         <th>Estado</th>
@@ -1240,7 +1237,6 @@
             
             const filtered = fichas.filter(f => {
                 const matchSearch = f.nombre.toLowerCase().includes(search) || 
-                                  f.competencia_principal.toLowerCase().includes(search) ||
                                   f.ciudad.toLowerCase().includes(search) ||
                                   f.codigo.toLowerCase().includes(search);
                 const matchEstado = !estado || f.estado === estado;
@@ -1251,7 +1247,7 @@
             if (!tbody) return;
             
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No se encontraron fichas</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No se encontraron fichas</td></tr>';
                 return;
             }
             
@@ -1260,7 +1256,6 @@
                     <td><strong style="color: var(--sena-blue);">${f.codigo}</strong></td>
                     <td>${f.id}</td>
                     <td><strong>${f.nombre}</strong></td>
-                    <td>${f.competencia_principal}</td>
                     <td>${f.ciudad}${f.corregimiento && f.corregimiento !== 'Principal' ? ` - ${f.corregimiento}` : ''}</td>
                     <td>${f.fecha_inicio}</td>
                     <td>${f.horas_totales}h</td>
@@ -1295,11 +1290,7 @@
                                     <input type="text" id="fichaNombre" class="form-control" required minlength="3">
                                 </div>
                                 <div class="form-group">
-                                    <label class="form-label">Competencia Principal *</label>
-                                    <input type="text" id="fichaCompetencia" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Ciudad *</label>
+                                    <label class="form-label">Ciudad y Corregimiento *</label>
                                     <div style="display: flex; gap: 12px;">
                                         <select id="fichaCiudad" class="form-control" required style="flex: 1;">
                                             <option value="">Seleccionar ciudad</option>
@@ -1359,14 +1350,10 @@
             document.getElementById('fichaId').value = ficha.id;
             document.getElementById('fichaCodigo').value = ficha.codigo || '';
             document.getElementById('fichaNombre').value = ficha.nombre;
-            document.getElementById('fichaCompetencia').value = ficha.competencia_principal;
             document.getElementById('fichaCiudad').value = ficha.ciudad;
             document.getElementById('fichaCorregimiento').value = ficha.corregimiento && ficha.corregimiento !== 'Principal' ? ficha.corregimiento : '';
-            
-            // Convert YYYY-MM-DD format (already in this format from Supabase)
             document.getElementById('fichaFechaInicio').value = ficha.fecha_inicio;
             document.getElementById('fichaFechaFin').value = ficha.fecha_fin;
-            
             document.getElementById('fichaHoras').value = ficha.horas_totales;
             document.getElementById('fichaEstado').value = ficha.estado;
             document.getElementById('fichaModal').classList.add('active');
