@@ -1997,7 +1997,6 @@
             document.getElementById('instructorModalTitle').textContent = 'Editar Instructor';
             document.getElementById('instructorId').value = inst.id;
             document.getElementById('instructorDocumento').value = inst.documento;
-
             document.getElementById('instructorNombre').value = inst.nombre;
             document.getElementById('instructorProfesion').value = inst.profesion;
             document.getElementById('instructorCelular').value = inst.celular;
@@ -2405,7 +2404,7 @@
             `;
         }
 
-        // ========== PAGE INITIALIZATION ==========
+        // ========== PAGE INITIALIZATION ========== 
         async function initApp() {
             console.log('🚀 Iniciando aplicación...');
             updateConnectionStatus('connecting');
@@ -2420,17 +2419,11 @@
                 loadLocalData();
             }
             
-            setupEventListeners();     setupEventListeners();
-
-
-
-
-
-
-</html></body>    </script>        initApp();        }            console.log('✅ Aplicación lista');
+            setupEventListeners();
+            console.log('✅ Aplicación lista');
         }
 
         window.addEventListener('load', initApp);
     </script>
-
-</body></html>
+</body>
+</html>
