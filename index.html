@@ -751,7 +751,7 @@
         let nextProgramacionId = 1;
 
         // Constants
-        const CIUDADES = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena', 'Otras'];
+        const CIUDADES = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena', 'Riohacha', 'Maicao', 'Uribia', 'Manaure', 'Fonseca', 'San Juan del Cesar', 'Dibulla', 'Barrancas', 'Albania', 'Distracción', 'Hatonuevo', 'La Jagua del Pilar', 'Urumita', 'Villanueva', 'El Molino', 'Otras'];
         const TIPOS_AMBIENTE = ['Aula', 'Laboratorio', 'Taller', 'Virtual', 'Multiuso'];
         const ESTADOS_FICHA = ['Activo', 'Finalizado', 'Suspendido'];
         const ESTADOS_PROGRAMACION = ['Programada', 'En ejecución', 'Finalizada'];
@@ -988,6 +988,7 @@
             const nombre = document.getElementById('fichaNombre').value.trim();
             const competencia = document.getElementById('fichaCompetencia').value.trim();
             const ciudad = document.getElementById('fichaCiudad').value;
+            const corregimiento = document.getElementById('fichaCorregimiento').value.trim() || 'Principal';
             const horas = parseInt(document.getElementById('fichaHoras').value);
             const estado = document.getElementById('fichaEstado').value;
             
@@ -1005,6 +1006,7 @@
                 nombre,
                 competencia_principal: competencia,
                 ciudad,
+                corregimiento,
                 fecha_inicio: fechaInicio,
                 fecha_fin: fechaFin,
                 horas_totales: horas,
@@ -1259,7 +1261,7 @@
                     <td>${f.id}</td>
                     <td><strong>${f.nombre}</strong></td>
                     <td>${f.competencia_principal}</td>
-                    <td>${f.ciudad}</td>
+                    <td>${f.ciudad}${f.corregimiento && f.corregimiento !== 'Principal' ? ` - ${f.corregimiento}` : ''}</td>
                     <td>${f.fecha_inicio}</td>
                     <td>${f.horas_totales}h</td>
                     <td><span class="status-badge status-${f.estado.toLowerCase()}">${f.estado}</span></td>
@@ -1298,10 +1300,14 @@
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Ciudad *</label>
-                                    <select id="fichaCiudad" class="form-control" required>
-                                        <option value="">Seleccionar ciudad</option>
-                                        ${CIUDADES.map(c => `<option value="${c}">${c}</option>`).join('')}
-                                    </select>
+                                    <div style="display: flex; gap: 12px;">
+                                        <select id="fichaCiudad" class="form-control" required style="flex: 1;">
+                                            <option value="">Seleccionar ciudad</option>
+                                            ${CIUDADES.map(c => `<option value="${c}">${c}</option>`).join('')}
+                                        </select>
+                                        <input type="text" id="fichaCorregimiento" class="form-control" placeholder="Corregimiento (Opcional)" style="flex: 1;">
+                                    </div>
+                                    <small style="color: var(--sena-gray); margin-top: 4px; display: block;">Si no especificas corregimiento, se considerará como ciudad Principal</small>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Fecha Inicio *</label>
@@ -1355,6 +1361,7 @@
             document.getElementById('fichaNombre').value = ficha.nombre;
             document.getElementById('fichaCompetencia').value = ficha.competencia_principal;
             document.getElementById('fichaCiudad').value = ficha.ciudad;
+            document.getElementById('fichaCorregimiento').value = ficha.corregimiento && ficha.corregimiento !== 'Principal' ? ficha.corregimiento : '';
             
             // Convert YYYY-MM-DD format (already in this format from Supabase)
             document.getElementById('fichaFechaInicio').value = ficha.fecha_inicio;
@@ -2003,6 +2010,7 @@
             document.getElementById('instructorModalTitle').textContent = 'Editar Instructor';
             document.getElementById('instructorId').value = inst.id;
             document.getElementById('instructorDocumento').value = inst.documento;
+
             document.getElementById('instructorNombre').value = inst.nombre;
             document.getElementById('instructorProfesion').value = inst.profesion;
             document.getElementById('instructorCelular').value = inst.celular;
@@ -2344,6 +2352,8 @@
                                 ${instructores.slice(0, 5).map(i => {
                                     const disponibles = calcularHorasDisponiblesInstructor(i.id);
                                     const porcentaje = Math.round((disponibles / i.horas_contratadas) * 100);
+                                    const statusClass = disponibles > 20 ? 'progress-complete' : 'progress-incomplete';
+                                    
                                     return `
                                         <div style="margin-bottom: 15px;">
                                             <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
@@ -2351,7 +2361,7 @@
                                                 <span style="font-size: 12px; color: ${disponibles > 20 ? '#27ae60' : '#e74c3c'};">${disponibles}h</span>
                                             </div>
                                             <div class="progress-bar" style="height: 15px;">
-                                                <div class="progress-fill ${disponibles > 20 ? 'progress-complete' : 'progress-incomplete'}" style="width: ${porcentaje}%"></div>
+                                                <div class="progress-fill ${statusClass}" style="width: ${porcentaje}%"></div>
                                             </div>
                                         </div>
                                     `;
@@ -2423,11 +2433,17 @@
                 loadLocalData();
             }
             
-            setupEventListeners();
-            console.log('✅ Aplicación lista');
+            setupEventListeners();     setupEventListeners();
+
+
+
+
+
+
+</html></body>    </script>        initApp();        }            console.log('✅ Aplicación lista');
         }
 
         window.addEventListener('load', initApp);
     </script>
-</body>
-</html>
+
+</body></html>
