@@ -2327,14 +2327,32 @@
                 ...acc,
                 [f.estado]: (acc[f.estado] || 0) + 1
             }), {});
-            
+
             const fichasActivas = fichas.filter(f => f.estado === 'Activo');
             const horasProgramadas = programaciones.reduce((sum, p) => sum + p.horas, 0);
             const competenciasCompletas = competencias.filter(c => {
                 const prog = calcularHorasProgramadas(c.id);
                 return prog >= c.horas_totales;
             }).length;
-            
+
+            // NUEVO: Resumen de horarios ocupados por ambiente
+            const ambientesOcupados = ambientes.map(a => {
+                const programacionesAmb = programaciones.filter(p => p.ambiente_id === a.id);
+                return {
+                    ...a,
+                    programaciones: programacionesAmb
+                };
+            });
+
+            // NUEVO: Reporte individual de instructores
+            const instructoresReportes = instructores.map(inst => {
+                const programacionesInst = programaciones.filter(p => p.instructor_id === inst.id);
+                return {
+                    ...inst,
+                    programaciones: programacionesInst
+                };
+            });
+
             container.innerHTML = `
                 <section class="section active">
                     <h2 style="margin-bottom: 24px; color: var(--sena-blue);">Reportes y Análisis</h2>
@@ -2359,6 +2377,16 @@
                             <div class="card-icon">🎯</div>
                             <div class="card-value">${competenciasCompletas}/${competencias.length}</div>
                             <div class="card-label">Competencias Completas</div>
+                        </div>
+                        <div class="dashboard-card">
+                            <div class="card-icon">🏢</div>
+                            <div class="card-value">${ambientes.length}</div>
+                            <div class="card-label">Ambientes</div>
+                        </div>
+                        <div class="dashboard-card">
+                            <div class="card-icon">👨‍🏫</div>
+                            <div class="card-value">${instructores.length}</div>
+                            <div class="card-label">Instructores</div>
                         </div>
                     </div>
                     
@@ -2416,6 +2444,7 @@
                             <table>
                                 <thead>
                                     <tr>
+                                        <th>Código</th>
                                         <th>Ficha</th>
                                         <th>Competencias</th>
                                         <th>Competencias Completas</th>
@@ -2435,6 +2464,7 @@
                                         
                                         return `
                                             <tr>
+                                                <td>${f.codigo || ''}</td>
                                                 <td><strong>${f.nombre}</strong></td>
                                                 <td>${compsDeFicha.length}</td>
                                                 <td>${compCompletas}/${compsDeFicha.length}</td>
@@ -2448,6 +2478,105 @@
                                             </tr>
                                         `;
                                     }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- NUEVO: Resumen de ambientes ocupados -->
+                    <div class="table-container" style="margin-top: 30px;">
+                        <div class="table-header">
+                            <h3>Ambientes y Horarios Programados</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Ambiente</th>
+                                        <th>Ciudad</th>
+                                        <th>Tipo</th>
+                                        <th>Capacidad</th>
+                                        <th>Programaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${ambientesOcupados.map(a => `
+                                        <tr>
+                                            <td>${a.nombre}</td>
+                                            <td>${a.ciudad}</td>
+                                            <td>${a.tipo}</td>
+                                            <td>${a.capacidad}</td>
+                                            <td>
+                                                ${a.programaciones.length === 0
+                                                    ? '<span style="color:var(--sena-gray)">Sin programación</span>'
+                                                    : `<ul style="padding-left:18px;margin:0;">
+                                                        ${a.programaciones.map(p => {
+                                                            const ficha = fichas.find(f => f.id === p.ficha_id);
+                                                            const competencia = competencias.find(c => c.id === p.competencia_id);
+                                                            return `<li>
+                                                                <b>${ficha?.codigo || ''}</b> - ${competencia?.nombre || ''} 
+                                                                <br>
+                                                                ${p.fecha_inicio || ''} 
+                                                                ${p.hora_inicio || ''} - ${p.hora_fin || ''}
+                                                            </li>`;
+                                                        }).join('')}
+                                                    </ul>`
+                                                }
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- NUEVO: Reporte individual de instructores -->
+                    <div class="table-container" style="margin-top: 30px;">
+                        <div class="table-header">
+                            <h3>Reporte Individual de Instructores</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Instructor</th>
+                                        <th>Documento</th>
+                                        <th>Correo</th>
+                                        <th>Profesión</th>
+                                        <th>Horario</th>
+                                        <th>Programaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${instructoresReportes.map(inst => `
+                                        <tr>
+                                            <td><strong>${inst.nombre}</strong></td>
+                                            <td>${inst.documento}</td>
+                                            <td>${inst.correo}</td>
+                                            <td>${inst.profesion}</td>
+                                            <td>${inst.horario || ''}</td>
+                                            <td>
+                                                ${inst.programaciones.length === 0
+                                                    ? '<span style="color:var(--sena-gray)">Sin programación</span>'
+                                                    : `<ul style="padding-left:18px;margin:0;">
+                                                        ${inst.programaciones.map(p => {
+                                                            const ficha = fichas.find(f => f.id === p.ficha_id);
+                                                            const competencia = competencias.find(c => c.id === p.competencia_id);
+                                                            const ambiente = ambientes.find(a => a.id === p.ambiente_id);
+                                                            return `<li>
+                                                                <b>${ficha?.codigo || ''}</b> - ${competencia?.nombre || ''} 
+                                                                <br>
+                                                                ${p.fecha_inicio || ''} 
+                                                                ${p.hora_inicio || ''} - ${p.hora_fin || ''}
+                                                                <br>
+                                                                Ambiente: ${ambiente?.nombre || ''}
+                                                            </li>`;
+                                                        }).join('')}
+                                                    </ul>`
+                                                }
+                                            </td>
+                                        </tr>
+                                    `).join('')}
                                 </tbody>
                             </table>
                         </div>
