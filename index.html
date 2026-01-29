@@ -1446,49 +1446,49 @@
         }
 
         function updateCompetenciasTable() {
-            const fichaId = document.getElementById('filterCompetenciaFicha')?.value || '';
-            
-            const filtered = competencias.filter(c => {
-                return !fichaId || c.ficha_id === parseInt(fichaId);
-            });
-            
-            const tbody = document.getElementById('competenciasTableBody');
-            if (!tbody) return;
-            
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No se encontraron competencias</td></tr>';
-                return;
-            }
-            
-            tbody.innerHTML = filtered.map(c => {
-                const ficha = fichas.find(f => f.id === c.ficha_id);
-                const programadas = calcularHorasProgramadas(c.id);
-                const porcentaje = Math.min(100, Math.round((programadas / c.horas_totales) * 100));
-                const statusClass = porcentaje === 100 ? 'progress-complete' : 
-                                   porcentaje > 0 ? 'progress-partial' : 'progress-incomplete';
-                
-                return `
-                    <tr>
-                        <td>${c.id}</td>
-                        <td><strong>${c.nombre}</strong></td>
-                        <td>${ficha?.nombre || 'N/A'}</td>
-                        <td>${c.horas_totales}h</td>
-                        <td>${programadas}h</td>
-                        <td>
-                            <div class="progress-bar">
-                                <div class="progress-fill ${statusClass}" style="width: ${porcentaje}%">${porcentaje}%</div>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn btn-sm btn-secondary" onclick="editCompetencia(${c.id})">Editar</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteCompetencia(${c.id})">Eliminar</button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
+    const fichaId = document.getElementById('filterCompetenciaFicha')?.value || '';
+    
+    const filtered = competencias.filter(c => {
+        return !fichaId || c.ficha_id === parseInt(fichaId);
+    });
+    
+    const tbody = document.getElementById('competenciasTableBody');
+    if (!tbody) return;
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No se encontraron competencias</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = filtered.map(c => {
+        const ficha = fichas.find(f => f.id === c.ficha_id);
+        const programadas = calcularHorasProgramadas(c.id);
+        const porcentaje = Math.min(100, Math.round((programadas / c.horas_totales) * 100));
+        const statusClass = porcentaje === 100 ? 'progress-complete' : 
+                           porcentaje > 0 ? 'progress-partial' : 'progress-incomplete';
+        
+        return `
+            <tr>
+                <td>${c.id}</td>
+                <td><strong>${c.nombre}</strong></td>
+                <td>${ficha?.codigo || 'N/A'}</td>
+                <td>${c.horas_totales}h</td>
+                <td>${programadas}h</td>
+                <td>
+                    <div class="progress-bar">
+                        <div class="progress-fill ${statusClass}" style="width: ${porcentaje}%">${porcentaje}%</div>
+                    </div>
+                </td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-secondary" onclick="editCompetencia(${c.id})">Editar</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCompetencia(${c.id})">Eliminar</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
 
         function getCompetenciaModal() {
             return `
@@ -1991,6 +1991,7 @@
                         const { error } = await supabaseClient.from('instructores').update(instData).eq('id', parseInt(id));
                         if (error) throw error;
                    
+
                     }
                     const inst = instructores.find(i => i.id === parseInt(id));
                     if (inst) Object.assign(inst, instData);
