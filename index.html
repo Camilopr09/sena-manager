@@ -755,6 +755,7 @@
         const TIPOS_AMBIENTE = ['Aula', 'Laboratorio', 'Taller', 'Virtual', 'Multiuso'];
         const ESTADOS_FICHA = ['Activo', 'Finalizado', 'Suspendido'];
         const ESTADOS_PROGRAMACION = ['Programada', 'En ejecución', 'Finalizada'];
+        const NIVELES_FICHA = ['Técnico', 'Tecnólogo', 'Especialización', 'Auxiliar', 'Operario', 'Otro'];
 
         const USERS = [
             { usuario: 'AdminCamillo', contrasena: '17954064@77', permisos: 'admin' },
@@ -990,7 +991,8 @@
             const corregimiento = document.getElementById('fichaCorregimiento').value.trim() || 'Principal';
             const horas = parseInt(document.getElementById('fichaHoras').value);
             const estado = document.getElementById('fichaEstado').value;
-            
+            const nivel = document.getElementById('fichaNivel').value;
+            const version = document.getElementById('fichaVersion').value.trim();
             const fechaInicio = document.getElementById('fichaFechaInicio').value;
             const fechaFin = document.getElementById('fichaFechaFin').value;
             
@@ -1008,7 +1010,9 @@
                 fecha_inicio: fechaInicio,
                 fecha_fin: fechaFin,
                 horas_totales: horas,
-                estado
+                estado,
+                nivel,
+                version
             };
             
             try {
@@ -1210,6 +1214,8 @@
                                         <th>Ciudad/Corregimiento</th>
                                         <th>Fecha Inicio</th>
                                         <th>Horas</th>
+                                        <th>Nivel</th>
+                                        <th>Versión</th>
                                         <th>Estado</th>
                                         <th>Acciones</th>
                                     </tr>
@@ -1247,7 +1253,7 @@
             if (!tbody) return;
             
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No se encontraron fichas</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No se encontraron fichas</td></tr>';
                 return;
             }
             
@@ -1259,6 +1265,8 @@
                     <td>${f.ciudad}${f.corregimiento && f.corregimiento !== 'Principal' ? ` - ${f.corregimiento}` : ''}</td>
                     <td>${f.fecha_inicio}</td>
                     <td>${f.horas_totales}h</td>
+                    <td>${f.nivel || ''}</td>
+                    <td>${f.version || ''}</td>
                     <td><span class="status-badge status-${f.estado.toLowerCase()}">${f.estado}</span></td>
                     <td>
                         <div class="action-buttons">
@@ -1288,6 +1296,17 @@
                                 <div class="form-group">
                                     <label class="form-label">Nombre del Curso *</label>
                                     <input type="text" id="fichaNombre" class="form-control" required minlength="3">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Nivel *</label>
+                                    <select id="fichaNivel" class="form-control" required>
+                                        <option value="">Seleccionar nivel</option>
+                                        ${NIVELES_FICHA.map(n => `<option value="${n}">${n}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Versión *</label>
+                                    <input type="text" id="fichaVersion" class="form-control" required placeholder="ej: 1.0, 2024, etc.">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Ciudad y Corregimiento *</label>
@@ -1350,6 +1369,8 @@
             document.getElementById('fichaId').value = ficha.id;
             document.getElementById('fichaCodigo').value = ficha.codigo || '';
             document.getElementById('fichaNombre').value = ficha.nombre;
+            document.getElementById('fichaNivel').value = ficha.nivel || '';
+            document.getElementById('fichaVersion').value = ficha.version || '';
             document.getElementById('fichaCiudad').value = ficha.ciudad;
             document.getElementById('fichaCorregimiento').value = ficha.corregimiento && ficha.corregimiento !== 'Principal' ? ficha.corregimiento : '';
             document.getElementById('fichaFechaInicio').value = ficha.fecha_inicio;
