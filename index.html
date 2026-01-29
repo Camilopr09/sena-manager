@@ -982,79 +982,81 @@
 
         // ========== CRUD FUNCTIONS FOR FICHAS ==========
         async function saveFicha(event) {
-            event.preventDefault();
-            
-            const id = document.getElementById('fichaId').value;
-            const codigo = document.getElementById('fichaCodigo').value.trim();
-            const nombre = document.getElementById('fichaNombre').value.trim();
-            const ciudad = document.getElementById('fichaCiudad').value;
-            const corregimiento = document.getElementById('fichaCorregimiento').value.trim() || 'Principal';
-            const horas = parseInt(document.getElementById('fichaHoras').value);
-            const estado = document.getElementById('fichaEstado').value;
-            const nivel = document.getElementById('fichaNivel').value;
-            const version = document.getElementById('fichaVersion').value.trim();
-            const fechaInicio = document.getElementById('fichaFechaInicio').value;
-            const fechaFin = document.getElementById('fichaFechaFin').value;
-            
-            // Validar que el código sea único si es nuevo
-            if (!id && fichas.some(f => f.codigo === codigo)) {
-                alert('❌ El código ya existe. Usa uno diferente.');
-                return;
+    event.preventDefault();
+
+    const id = document.getElementById('fichaId').value;
+    const codigo = document.getElementById('fichaCodigo').value.trim();
+    const nombre = document.getElementById('fichaNombre').value.trim();
+    const ciudad = document.getElementById('fichaCiudad').value;
+    const corregimiento = document.getElementById('fichaCorregimiento').value.trim() || 'Principal';
+    const horas = parseInt(document.getElementById('fichaHoras').value);
+    const estado = document.getElementById('fichaEstado').value;
+    const nivel = document.getElementById('fichaNivel').value;
+    const version = document.getElementById('fichaVersion').value.trim();
+    const fechaInicio = document.getElementById('fichaFechaInicio').value;
+    const fechaFin = document.getElementById('fichaFechaFin').value;
+    const instructorResponsableId = parseInt(document.getElementById('fichaInstructorResponsable').value) || null;
+
+    // Validar que el código sea único si es nuevo
+    if (!id && fichas.some(f => f.codigo === codigo)) {
+        alert('❌ El código ya existe. Usa uno diferente.');
+        return;
+    }
+
+    const fichaData = {
+        codigo,
+        nombre,
+        ciudad,
+        corregimiento,
+        fecha_inicio: fechaInicio,
+        fecha_fin: fechaFin,
+        horas_totales: horas,
+        estado,
+        nivel,
+        version,
+        instructor_responsable_id: instructorResponsableId
+    };
+
+    try {
+        if (id) {
+            // UPDATE
+            if (isConnected) {
+                const { error } = await supabaseClient
+                    .from('fichas')
+                    .update(fichaData)
+                    .eq('id', parseInt(id));
+                if (error) throw error;
+                console.log('✅ Ficha actualizada en Supabase');
             }
-            
-            const fichaData = {
-                codigo,
-                nombre,
-                ciudad,
-                corregimiento,
-                fecha_inicio: fechaInicio,
-                fecha_fin: fechaFin,
-                horas_totales: horas,
-                estado,
-                nivel,
-                version
+            const ficha = fichas.find(f => f.id === parseInt(id));
+            if (ficha) {
+                Object.assign(ficha, fichaData);
+            }
+        } else {
+            // INSERT
+            const newFicha = {
+                id: nextFichaId++,
+                ...fichaData
             };
             
-            try {
-                if (id) {
-                    // UPDATE
-                    if (isConnected) {
-                        const { error } = await supabaseClient
-                            .from('fichas')
-                            .update(fichaData)
-                            .eq('id', parseInt(id));
-                        if (error) throw error;
-                        console.log('✅ Ficha actualizada en Supabase');
-                    }
-                    const ficha = fichas.find(f => f.id === parseInt(id));
-                    if (ficha) {
-                        Object.assign(ficha, fichaData);
-                    }
-                } else {
-                    // INSERT
-                    const newFicha = {
-                        id: nextFichaId++,
-                        ...fichaData
-                    };
-                    
-                    if (isConnected) {
-                        const { error } = await supabaseClient
-                            .from('fichas')
-                            .insert([newFicha]);
-                        if (error) throw error;
-                        console.log('✅ Ficha insertada en Supabase');
-                    }
-                    fichas.push(newFicha);
-                }
-                
-                closeFichaModal();
-                updateFichasTable();
-                alert('✅ Ficha guardada correctamente');
-            } catch (error) {
-                console.error('❌ Error:', error);
-                alert('❌ Error al guardar: ' + (error.message || 'Error desconocido'));
+            if (isConnected) {
+                const { error } = await supabaseClient
+                    .from('fichas')
+                    .insert([newFicha]);
+                if (error) throw error;
+                console.log('✅ Ficha insertada en Supabase');
             }
+            fichas.push(newFicha);
         }
+        
+        closeFichaModal();
+        updateFichasTable();
+        alert('✅ Ficha guardada correctamente');
+    } catch (error) {
+        console.error('❌ Error:', error);
+        alert('❌ Error al guardar: ' + (error.message || 'Error desconocido'));
+    }
+}
 
         async function deleteFicha(id) {
             if (!confirm('¿Eliminar esta ficha?')) return;
@@ -1216,6 +1218,7 @@
                                         <th>Horas</th>
                                         <th>Nivel</th>
                                         <th>Versión</th>
+                                        <th>Instructor responsable</th>
                                         <th>Estado</th>
                                         <th>Acciones</th>
                                     </tr>
@@ -1238,45 +1241,49 @@
         }
 
         function updateFichasTable() {
-            const search = document.getElementById('searchFichas')?.value.toLowerCase() || '';
-            const estado = document.getElementById('filterEstadoFicha')?.value || '';
-            
-            const filtered = fichas.filter(f => {
-                const matchSearch = f.nombre.toLowerCase().includes(search) || 
-                                  f.ciudad.toLowerCase().includes(search) ||
-                                  f.codigo.toLowerCase().includes(search);
-                const matchEstado = !estado || f.estado === estado;
-                return matchSearch && matchEstado;
-            });
-            
-            const tbody = document.getElementById('fichasTableBody');
-            if (!tbody) return;
-            
-            if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No se encontraron fichas</td></tr>';
-                return;
-            }
-            
-            tbody.innerHTML = filtered.map(f => `
-                <tr>
-                    <td><strong style="color: var(--sena-blue);">${f.codigo}</strong></td>
-                    <td>${f.id}</td>
-                    <td><strong>${f.nombre}</strong></td>
-                    <td>${f.ciudad}${f.corregimiento && f.corregimiento !== 'Principal' ? ` - ${f.corregimiento}` : ''}</td>
-                    <td>${f.fecha_inicio}</td>
-                    <td>${f.horas_totales}h</td>
-                    <td>${f.nivel || ''}</td>
-                    <td>${f.version || ''}</td>
-                    <td><span class="status-badge status-${f.estado.toLowerCase()}">${f.estado}</span></td>
-                    <td>
-                        <div class="action-buttons">
-                            <button class="btn btn-sm btn-secondary" onclick="editFicha(${f.id})">Editar</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteFicha(${f.id})">Eliminar</button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-        }
+    const search = document.getElementById('searchFichas')?.value.toLowerCase() || '';
+    const estado = document.getElementById('filterEstadoFicha')?.value || '';
+    
+    const filtered = fichas.filter(f => {
+        const matchSearch = f.nombre.toLowerCase().includes(search) || 
+                          f.ciudad.toLowerCase().includes(search) ||
+                          f.codigo.toLowerCase().includes(search);
+        const matchEstado = !estado || f.estado === estado;
+        return matchSearch && matchEstado;
+    });
+    
+    const tbody = document.getElementById('fichasTableBody');
+    if (!tbody) return;
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No se encontraron fichas</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = filtered.map(f => {
+        const instructor = instructores.find(i => i.id === f.instructor_responsable_id);
+        return `
+            <tr>
+                <td><strong style="color: var(--sena-blue);">${f.codigo}</strong></td>
+                <td>${f.id}</td>
+                <td><strong>${f.nombre}</strong></td>
+                <td>${f.ciudad}${f.corregimiento && f.corregimiento !== 'Principal' ? ` - ${f.corregimiento}` : ''}</td>
+                <td>${f.fecha_inicio}</td>
+                <td>${f.horas_totales}h</td>
+                <td>${f.nivel || ''}</td>
+                <td>${f.version || ''}</td>
+                <td>${instructor ? instructor.nombre : ''}</td>
+                <td><span class="status-badge status-${f.estado.toLowerCase()}">${f.estado}</span></td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-secondary" onclick="editFicha(${f.id})">Editar</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteFicha(${f.id})">Eliminar</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
 
         function getFichaModal() {
             return `
@@ -1307,6 +1314,13 @@
                                 <div class="form-group">
                                     <label class="form-label">Versión *</label>
                                     <input type="text" id="fichaVersion" class="form-control" required placeholder="ej: 1.0, 2024, etc.">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Instructor responsable *</label>
+                                    <select id="fichaInstructorResponsable" class="form-control" required>
+                                        <option value="">Seleccionar instructor</option>
+                                        ${instructores.map(i => `<option value="${i.id}">${i.nombre}</option>`).join('')}
+                                    </select>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Ciudad y Corregimiento *</label>
@@ -1364,13 +1378,14 @@
         function editFicha(id) {
             const ficha = fichas.find(f => f.id === id);
             if (!ficha) return;
-            
+
             document.getElementById('fichaModalTitle').textContent = 'Editar Ficha';
             document.getElementById('fichaId').value = ficha.id;
             document.getElementById('fichaCodigo').value = ficha.codigo || '';
             document.getElementById('fichaNombre').value = ficha.nombre;
             document.getElementById('fichaNivel').value = ficha.nivel || '';
             document.getElementById('fichaVersion').value = ficha.version || '';
+            document.getElementById('fichaInstructorResponsable').value = ficha.instructor_responsable_id || '';
             document.getElementById('fichaCiudad').value = ficha.ciudad;
             document.getElementById('fichaCorregimiento').value = ficha.corregimiento && ficha.corregimiento !== 'Principal' ? ficha.corregimiento : '';
             document.getElementById('fichaFechaInicio').value = ficha.fecha_inicio;
@@ -1975,6 +1990,7 @@
                     if (isConnected) {
                         const { error } = await supabaseClient.from('instructores').update(instData).eq('id', parseInt(id));
                         if (error) throw error;
+                   
                     }
                     const inst = instructores.find(i => i.id === parseInt(id));
                     if (inst) Object.assign(inst, instData);
