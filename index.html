@@ -1899,60 +1899,60 @@
 
         function getInstructorModal() {
             return `
-                <div id="instructorModal" class="modal">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h3 id="instructorModalTitle">Nuevo Instructor</h3>
-                            <button class="close-modal" onclick="closeInstructorModal()">&times;</button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="instructorForm" onsubmit="saveInstructor(event)">
-                                <div class="form-group">
-                                    <label class="form-label">Documento *</label>
-                                    <input type="text" id="instructorDocumento" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Nombre Completo *</label>
-                                    <input type="text" id="instructorNombre" class="form-control" required minlength="3">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Profesión *</label>
-                                    <input type="text" id="instructorProfesion" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Celular *</label>
-                                    <input type="tel" id="instructorCelular" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Correo Electrónico *</label>
-                                    <input type="email" id="instructorCorreo" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Horario</label>
-                                    <input type="text" id="instructorHorario" class="form-control" placeholder="Ej: Lunes a Viernes 7am-4pm">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Fecha Inicio Contrato *</label>
-                                    <input type="date" id="instructorFechaInicio" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Fecha Fin Contrato *</label>
-                                    <input type="date" id="instructorFechaFin" class="form-control" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Horas Contratadas *</label>
-                                    <input type="number" id="instructorHoras" class="form-control" required min="1">
-                                </div>
-                                <input type="hidden" id="instructorId">
-                            </form>
-                        </div>
-                        <div class="modal-footer">
-                            <button class="btn btn-secondary" onclick="closeInstructorModal()">Cancelar</button>
-                            <button class="btn btn-primary" onclick="document.getElementById('instructorForm').requestSubmit()">Guardar</button>
-                        </div>
-                    </div>
+        <div id="instructorModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="instructorModalTitle">Nuevo Instructor</h3>
+                    <button class="close-modal" onclick="closeInstructorModal()">&times;</button>
                 </div>
-            `;
+                <div class="modal-body">
+                    <form id="instructorForm" onsubmit="saveInstructor(event)">
+                        <div class="form-group">
+                            <label class="form-label">Documento *</label>
+                            <input type="text" id="instructorDocumento" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nombre Completo *</label>
+                            <input type="text" id="instructorNombre" class="form-control" required minlength="3">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Profesión *</label>
+                            <input type="text" id="instructorProfesion" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Celular *</label>
+                            <input type="tel" id="instructorCelular" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Correo Electrónico *</label>
+                            <input type="email" id="instructorCorreo" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Horario</label>
+                            <input type="text" id="instructorHorario" class="form-control" placeholder="Ej: Lunes a Viernes 7am-4pm">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fecha Inicio Contrato *</label>
+                            <input type="date" id="instructorFechaInicio" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Fecha Fin Contrato *</label>
+                            <input type="date" id="instructorFechaFin" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Horas Contratadas *</label>
+                            <input type="number" id="instructorHoras" class="form-control" required min="1">
+                        </div>
+                        <input type="hidden" id="instructorId">
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="closeInstructorModal()">Cancelar</button>
+                    <button class="btn btn-primary" onclick="document.getElementById('instructorForm').requestSubmit()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    `;
         }
 
         async function saveInstructor(event) {
@@ -1967,7 +1967,7 @@
             const fechaInicio = document.getElementById('instructorFechaInicio').value;
             const fechaFin = document.getElementById('instructorFechaFin').value;
             const horas = parseInt(document.getElementById('instructorHoras').value);
-            
+
             if (!validateEmail(correo)) {
                 alert('❌ Correo inválido');
                 return;
@@ -1976,7 +1976,7 @@
                 alert('❌ Celular debe tener 10 dígitos');
                 return;
             }
-            
+
             const instData = {
                 documento, nombre, profesion, celular, correo,
                 horario,
@@ -1984,14 +1984,12 @@
                 fecha_fin_contrato: fechaFin,
                 horas_contratadas: horas
             };
-            
+
             try {
                 if (id) {
                     if (isConnected) {
                         const { error } = await supabaseClient.from('instructores').update(instData).eq('id', parseInt(id));
                         if (error) throw error;
-                   
-
                     }
                     const inst = instructores.find(i => i.id === parseInt(id));
                     if (inst) Object.assign(inst, instData);
