@@ -1165,8 +1165,8 @@
         // ========== LOCAL DATA FALLBACK ==========
         function loadLocalData() {
             console.warn('Usando datos locales (listas vacías)');
+            // Mantén los arreglos ya inicializados en memoria; solo marca el estado.
             updateConnectionStatus('error');
-            loadLocalData();
         }
 
         // ========== RENDER FUNCTIONS ==========
