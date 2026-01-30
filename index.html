@@ -739,7 +739,8 @@
             DOMAIN: 'sandbox5a88080c78674a869e5f6628807fb39f.mailgun.org',
             API_KEY: '1c7f8751-838164fc',
             FROM_EMAIL: 'noreply@sandbox5a88080c78674a869e5f6628807fb39f.mailgun.org',
-            FROM_NAME: 'Sistema SENA'
+            FROM_NAME: 'Sistema SENA',
+            TEMPLATE_NAME: 'nueva programacion sena'  // ⬅️ Nombre del template que creaste
         };
 
         // ========== GLOBAL VARIABLES ==========
@@ -1154,39 +1155,22 @@
             }
 
             try {
-                // Construir el texto del email (Mailgun lo convierte a HTML automáticamente)
-                const emailText = `
-Estimado ${instructor.nombre},
-
-Se le ha asignado una nueva programación:
-
-DETALLES DE LA PROGRAMACIÓN:
-═══════════════════════════════════════
-
-📋 Ficha: ${ficha.codigo} - ${ficha.nombre}
-🎯 Competencia: ${competencia.nombre}
-📅 Fecha de Inicio: ${programacion.fecha_inicio}
-⏰ Horario: ${programacion.hora_inicio} - ${programacion.hora_fin}
-⏱️  Horas: ${programacion.horas}h
-📍 Ambiente: ${(ambientes.find(a => a.id === programacion.ambiente_id)?.nombre) || 'No asignado'}
-
-═══════════════════════════════════════
-
-Queda atentamente invitado a ejecutar esta programación.
-
-Saludos cordiales,
-Sistema de Gestión SENA
-
----
-Este es un mensaje automático, por favor no responda a este correo.
-                `;
-
-                // Preparar datos para Mailgun
+                // Preparar datos para Mailgun con template
                 const formData = new FormData();
                 formData.append('from', `${MAILGUN_CONFIG.FROM_NAME} <${MAILGUN_CONFIG.FROM_EMAIL}>`);
                 formData.append('to', instructor.correo);
-                formData.append('subject', `Nueva Programación: ${ficha.codigo} - ${competencia.nombre}`);
-                formData.append('text', emailText);
+                formData.append('template', MAILGUN_CONFIG.TEMPLATE_NAME);
+                
+                // Variables para el template
+                formData.append('v:instructor_nombre', instructor.nombre);
+                formData.append('v:ficha_codigo', ficha.codigo);
+                formData.append('v:ficha_nombre', ficha.nombre);
+                formData.append('v:competencia_nombre', competencia.nombre);
+                formData.append('v:fecha_inicio', programacion.fecha_inicio);
+                formData.append('v:hora_inicio', programacion.hora_inicio);
+                formData.append('v:hora_fin', programacion.hora_fin);
+                formData.append('v:horas', programacion.horas);
+                formData.append('v:ambiente_nombre', (ambientes.find(a => a.id === programacion.ambiente_id)?.nombre) || 'No asignado');
 
                 // Enviar via Mailgun API
                 const auth = 'Basic ' + btoa('api:' + MAILGUN_CONFIG.API_KEY);
