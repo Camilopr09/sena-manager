@@ -1412,7 +1412,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                             <form id="fichaForm" onsubmit="saveFicha(event)">
                                 <div class="form-group">
                                     <label class="form-label">Código de Ficha *</label>
-                                    <input type="text" id="fichaCodigo" class="form-control" required placeholder="ej: BOG-TM-2025-001">
+                                    <input type="text" id="fichaCodigo" class="form-control" required placeholder="ej: 0000000">
                                     <small style="color: var(--sena-gray); margin-top: 4px; display: block;">Ingresa un código único para identificar la ficha</small>
                                 </div>
                                 <div class="form-group">
@@ -1528,10 +1528,21 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                     
                     <div class="filters">
                         <div class="filter-item">
+                            <label>Buscar por Código de Ficha</label>
+                            <input type="text" id="searchCompetenciaFicha" class="search-box" placeholder="Buscar por código..." onkeyup="filterCompetencias()">
+                        </div>
+                        <div class="filter-item">
                             <label>Filtrar por Ficha</label>
                             <select id="filterCompetenciaFicha" class="form-control" onchange="filterCompetencias()">
                                 <option value="">Todas las fichas</option>
                                 ${fichas.map(f => `<option value="${f.id}">${f.codigo}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label>Filtrar por Estado</label>
+                            <select id="filterCompetenciaEstado" class="form-control" onchange="filterCompetencias()">
+                                <option value="">Todos los estados</option>
+                                ${ESTADOS_PROGRAMACION.map(e => `<option value="${e}">${e}</option>`).join('')}
                             </select>
                         </div>
                     </div>
@@ -1569,9 +1580,13 @@ Este es un mensaje automático, por favor no responda a este correo.`;
 
         function updateCompetenciasTable() {
     const fichaId = document.getElementById('filterCompetenciaFicha')?.value || '';
+    const searchCodigo = document.getElementById('searchCompetenciaFicha')?.value.toLowerCase() || '';
     
     const filtered = competencias.filter(c => {
-        return !fichaId || c.ficha_id === parseInt(fichaId);
+        const ficha = fichas.find(f => f.id === c.ficha_id);
+        const matchFicha = !fichaId || c.ficha_id === parseInt(fichaId);
+        const matchCodigo = !searchCodigo || (ficha && ficha.codigo && ficha.codigo.toLowerCase().includes(searchCodigo));
+        return matchFicha && matchCodigo;
     });
     
     const tbody = document.getElementById('competenciasTableBody');
