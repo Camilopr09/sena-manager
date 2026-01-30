@@ -1177,31 +1177,22 @@ Sistema de Gestión SENA
 Este es un mensaje automático, por favor no responda a este correo.`;
 
                 const formData = new FormData();
-                formData.append('from', `${MAILGUN_CONFIG.FROM_NAME} <${MAILGUN_CONFIG.FROM_EMAIL}>`);
-                formData.append('to', instructor.correo);
+                formData.append('email', instructor.correo);
+                formData.append('name', instructor.nombre);
                 formData.append('subject', `Nueva Programación: ${ficha.codigo} - ${competencia.nombre}`);
-                formData.append('text', emailText);
+                formData.append('message', emailText);
 
-                const auth = 'Basic ' + btoa('api:' + MAILGUN_CONFIG.API_KEY);
-                
-                const response = await fetch(
-                    `https://api.mailgun.net/v3/${MAILGUN_CONFIG.DOMAIN}/messages`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': auth
-                        },
-                        body: formData
-                    }
-                );
+                // ✅ ID DE FORMSPREE CONFIGURADO
+                const response = await fetch('https://formspree.io/f/xojwnkdy', {
+                    method: 'POST',
+                    body: formData
+                });
 
                 if (!response.ok) {
-                    const error = await response.json();
-                    console.error('Error de Mailgun:', error);
-                    throw new Error(error.message || 'Error en Mailgun');
+                    throw new Error('Error al enviar correo por Formspree');
                 }
 
-                console.log('✅ Correo enviado por Mailgun');
+                console.log('✅ Correo enviado exitosamente');
 
                 const key = `prog_${programacion.id || Date.now()}`;
                 emailLog[key] = {
