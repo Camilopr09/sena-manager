@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión SENA</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/index.min.js"></script>
     <style>
         :root {
             --sena-blue: #003366;
@@ -730,6 +731,13 @@
             ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmdXJ3ZWxwemFybnBjanhyenFsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1MzU2MjYsImV4cCI6MjA4MDExMTYyNn0.xE-eMmLR3EWN8zt8vitTFUyn_ICWMcFSDedVkVwo3xk',
             MAX_RETRIES: 3,
             RETRY_DELAY: 2000
+        };
+
+        // ========== EMAILJS CONFIGURATION ==========
+        const EMAILJS_CONFIG = {
+            SERVICE_ID: 'service_sena_manager',
+            TEMPLATE_ID: 'template_sena_professional',
+            PUBLIC_KEY: 'YOUR_PUBLIC_KEY_HERE'
         };
 
         // ========== GLOBAL VARIABLES ==========
@@ -2318,7 +2326,21 @@
                 }
                 closeProgramacionModal();
                 updateProgramacionesTable();
-                alert('✅ Programación guardada');
+                
+                // Enviar correo al instructor
+                const instructor = instructores.find(i => i.id === instructorId);
+                const competencia = competencias.find(c => c.id === competenciaId);
+                if (instructor && competencia && ficha) {
+                    const enviado = await sendEmailToInstructor(instructor, ficha, competencia, progData);
+                    if (enviado) {
+                        alert('✅ Programación guardada y correo enviado al instructor');
+                    } else {
+                        alert('✅ Programación guardada (sin envío de correo)');
+                    }
+                } else {
+                    alert('✅ Programación guardada correctamente');
+                }
+
             } catch (error) {
                 alert('❌ Error: ' + error.message);
             }
@@ -2662,6 +2684,7 @@
             }
             
             setupEventListeners();
+            await initEmailJS();
             console.log('✅ Aplicación lista');
         }
 
