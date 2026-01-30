@@ -1115,6 +1115,60 @@
             return /^\d{10}$/.test(phone);
         }
 
+        // ========== EMAIL FUNCTIONS ==========
+        async function initEmailJS() {
+            try {
+                if (!window.emailjs || !window.emailjs.init) {
+                    console.warn('EmailJS no está disponible en la ventana');
+                    return false;
+                }
+                emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
+                console.log('✅ EmailJS inicializado');
+                return true;
+            } catch (error) {
+                console.error('❌ Error inicializando EmailJS:', error);
+                return false;
+            }
+        }
+
+        async function sendEmailToInstructor(instructor, ficha, competencia, programacion) {
+            if (!window.emailjs || !window.emailjs.send) {
+                console.warn('EmailJS no disponible para enviar');
+                return false;
+            }
+            try {
+                const params = {
+                    to_name: instructor.nombre,
+                    to_email: instructor.correo,
+                    ficha_codigo: ficha.codigo,
+                    ficha_nombre: ficha.nombre,
+                    competencia_nombre: competencia.nombre,
+                    fecha_inicio: programacion.fecha_inicio,
+                    hora_inicio: programacion.hora_inicio,
+                    hora_fin: programacion.hora_fin,
+                    ambiente_nombre: (ambientes.find(a => a.id === programacion.ambiente_id)?.nombre) || '',
+                    horas: programacion.horas
+                };
+                await emailjs.send(EMAILJS_CONFIG.SERVICE_ID, EMAILJS_CONFIG.TEMPLATE_ID, params);
+                const key = `prog_${programacion.id || programacion.tempId || Date.now()}`;
+                emailLog[key] = {
+                    fecha_envio: new Date().toLocaleDateString('es-CO'),
+                    hora_envio: new Date().toLocaleTimeString('es-CO')
+                };
+                return true;
+            } catch (error) {
+                console.error('❌ Error enviando correo:', error);
+                return false;
+            }
+        }
+
+        // ========== LOCAL DATA FALLBACK ==========
+        function loadLocalData() {
+            console.warn('Usando datos locales (listas vacías)');
+            updateConnectionStatus('error');
+            loadLocalData();
+        }
+
         // ========== RENDER FUNCTIONS ==========
 
         // RESUMEN
@@ -2369,12 +2423,12 @@
                 closeProgramacionModal();
                 updateProgramacionesTable();
                 
-                // Enviar correo al instructor
                 const instructor = instructores.find(i => i.id === instructorId);
                 const competencia = competencias.find(c => c.id === competenciaId);
                 const ficha = fichas.find(f => f.id === fichaId);
-                if (instructor && competencia && ficha) {
-                    const enviado = await sendEmailToInstructor(instructor, ficha, competencia, progData);
+                const programacionGuardada = programaciones.find(p => p.id === (id ? parseInt(id) : nextProgramacionId - 1));
+                if (instructor && competencia && ficha && programacionGuardada) {
+                    const enviado = await sendEmailToInstructor(instructor, ficha, competencia, programacionGuardada);
                     if (enviado) {
                         alert('✅ Programación guardada y correo enviado al instructor');
                     } else {
