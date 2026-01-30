@@ -735,9 +735,9 @@
 
         // ========== SENDGRID CONFIGURATION ==========
         const SENDGRID_CONFIG = {
-            API_KEY: 'SG.kirVgixmTlmOkEtJwJ8tvQ.4z_HETATlgN_Vy6viEu2_6FmimVvi6gJ14RBTgit20w',
             FROM_EMAIL: 'noreply@sena-manager.com',
             FROM_NAME: 'Sistema de Gestión SENA'
+            // API_KEY se obtiene del backend (Vercel) - NO incluir aquí por seguridad
         };
 
         // ========== GLOBAL VARIABLES ==========
@@ -757,7 +757,7 @@
         let nextAmbienteId = 1;
         let nextInstructorId = 1;
         let nextProgramacionId = 1;
-        let emailLog = {}; // NUEVO: Registro de correos enviados
+        let emailLog = {}; // NUEVO: Registro de correos enviados (en memoria)
         let emailReady = false; // NUEVO: estado de EmailJS
 
         // Constants
@@ -1134,7 +1134,53 @@
             }
             console.log('✅ SendGrid listo para enviar correos');
             emailReady = true;
+            
+            // NUEVO: Cargar emailLog desde Supabase si está conectado
+            if (isConnected) {
+                await loadEmailLogFromDatabase();
+            } else {
+                // Si no está conectado, cargar del localStorage como respaldo
+                const savedEmailLog = localStorage.getItem('sena_emailLog');
+                if (savedEmailLog) {
+                    try {
+                        emailLog = JSON.parse(savedEmailLog);
+                    } catch (e) {
+                        console.warn('⚠️ Error al cargar registro de correos');
+                        emailLog = {};
+                    }
+                }
+            }
+            
             return true;
+        }
+
+        // NUEVO: Cargar registro de correos desde la base de datos
+        async function loadEmailLogFromDatabase() {
+            if (!isConnected) return;
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('email_log')
+                    .select('*');
+                
+                if (error) {
+                    console.warn('⚠️ Error cargando email_log:', error.message);
+                    return;
+                }
+                
+                emailLog = {};
+                data?.forEach(item => {
+                    const key = `prog_${item.programacion_id}`;
+                    emailLog[key] = {
+                        fecha_envio: item.fecha_envio,
+                        hora_envio: item.hora_envio
+                    };
+                });
+                
+                console.log('✅ Registro de correos cargado desde la base de datos');
+            } catch (error) {
+                console.error('❌ Error cargando email_log:', error);
+            }
         }
 
         async function sendEmailToInstructor(instructor, ficha, competencia, programacion) {
@@ -1194,11 +1240,34 @@ Este es un mensaje automático, por favor no responda a este correo.`;
 
                 console.log('✅ Correo enviado exitosamente');
 
-                const key = `prog_${programacion.id || Date.now()}`;
+                const fecha = new Date().toLocaleDateString('es-CO');
+                const hora = new Date().toLocaleTimeString('es-CO');
+                const key = `prog_${programacion.id}`;
+                
                 emailLog[key] = {
-                    fecha_envio: new Date().toLocaleDateString('es-CO'),
-                    hora_envio: new Date().toLocaleTimeString('es-CO')
+                    fecha_envio: fecha,
+                    hora_envio: hora
                 };
+
+                // NUEVO: Guardar en la base de datos
+                if (isConnected) {
+                    const { error: insertError } = await supabaseClient
+                        .from('email_log')
+                        .insert([{
+                            programacion_id: programacion.id,
+                            fecha_envio: fecha,
+                            hora_envio: hora
+                        }]);
+                    
+                    if (insertError) {
+                        console.warn('⚠️ Error guardando en email_log:', insertError.message);
+                        // Guardar en localStorage como respaldo
+                        localStorage.setItem('sena_emailLog', JSON.stringify(emailLog));
+                    }
+                } else {
+                    // Si no está conectado, guardar en localStorage como respaldo
+                    localStorage.setItem('sena_emailLog', JSON.stringify(emailLog));
+                }
 
                 return { success: true };
             } catch (error) {
