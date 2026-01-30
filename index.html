@@ -1167,43 +1167,32 @@ Sistema de Gestión SENA
 ---
 Este es un mensaje automático, por favor no responda a este correo.`;
 
-                // ✅ SendGrid API v3
-                const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+                // ✅ Usar backend proxy en Vercel
+                const response = await fetch('/api/send-email', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${SENDGRID_CONFIG.API_KEY}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        personalizations: [
-                            {
-                                to: [{ email: instructor.correo, name: instructor.nombre }],
-                                subject: `Nueva Programación: ${ficha.codigo} - ${competencia.nombre}`
-                            }
-                        ],
-                        from: {
-                            email: SENDGRID_CONFIG.FROM_EMAIL,
-                            name: SENDGRID_CONFIG.FROM_NAME
-                        },
-                        reply_to: {
-                            email: SENDGRID_CONFIG.FROM_EMAIL
-                        },
-                        content: [
-                            {
-                                type: 'text/plain',
-                                value: emailText
-                            }
-                        ]
+                        email: instructor.correo,
+                        name: instructor.nombre,
+                        subject: `Nueva Programación: ${ficha.codigo} - ${competencia.nombre}`,
+                        message: emailText
                     })
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    const errorMsg = errorData.errors?.[0]?.message || `Error ${response.status}`;
-                    throw new Error(errorMsg);
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Error ${response.status}`);
                 }
 
-                console.log('✅ Correo enviado exitosamente por SendGrid');
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Error desconocido');
+                }
+
+                console.log('✅ Correo enviado exitosamente');
 
                 const key = `prog_${programacion.id || Date.now()}`;
                 emailLog[key] = {
