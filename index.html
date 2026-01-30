@@ -986,6 +986,7 @@
 
     const id = document.getElementById('fichaId').value;
     const codigo = document.getElementById('fichaCodigo').value.trim();
+    const codigoPrograma = document.getElementById('fichaCodigoPrograma').value.trim();
     const nombre = document.getElementById('fichaNombre').value.trim();
     const ciudad = document.getElementById('fichaCiudad').value;
     const corregimiento = document.getElementById('fichaCorregimiento').value.trim() || 'Principal';
@@ -1005,6 +1006,7 @@
 
     const fichaData = {
         codigo,
+        codigo_programa: codigoPrograma,
         nombre,
         ciudad,
         corregimiento,
@@ -1167,7 +1169,7 @@
                                 <thead>
                                     <tr>
                                         <th>Nombre</th>
-                                        <th>Ciudad</th>
+                                        <th>Ciudad/Corregimiento</th>
                                         <th>Fecha Inicio</th>
                                         <th>Estado</th>
                                     </tr>
@@ -1176,7 +1178,7 @@
                                     ${fichas.slice(-5).reverse().map(f => `
                                         <tr>
                                             <td>${f.nombre}</td>
-                                            <td>${f.ciudad}</td>
+                                            <td>${f.ciudad}${f.corregimiento && f.corregimiento !== 'Principal' ? ` - ${f.corregimiento}` : ''}</td>
                                             <td>${f.fecha_inicio}</td>
                                             <td><span class="status-badge status-${f.estado.toLowerCase()}">${f.estado}</span></td>
                                         </tr>
@@ -1211,6 +1213,7 @@
                                 <thead>
                                     <tr>
                                         <th>Código</th>
+                                        <th>Código Programa</th>
                                         <th>ID</th>
                                         <th>Nombre</th>
                                         <th>Ciudad/Corregimiento</th>
@@ -1265,6 +1268,7 @@
         return `
             <tr>
                 <td><strong style="color: var(--sena-blue);">${f.codigo}</strong></td>
+                <td><strong style="color: var(--sena-orange);">${f.codigo_programa || ''}</strong></td>
                 <td>${f.id}</td>
                 <td><strong>${f.nombre}</strong></td>
                 <td>${f.ciudad}${f.corregimiento && f.corregimiento !== 'Principal' ? ` - ${f.corregimiento}` : ''}</td>
@@ -1299,6 +1303,11 @@
                                     <label class="form-label">Código de Ficha *</label>
                                     <input type="text" id="fichaCodigo" class="form-control" required placeholder="ej: BOG-TM-2025-001">
                                     <small style="color: var(--sena-gray); margin-top: 4px; display: block;">Ingresa un código único para identificar la ficha</small>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Código de Programa *</label>
+                                    <input type="text" id="fichaCodigoPrograma" class="form-control" required placeholder="ej: PROG-2025-001">
+                                    <small style="color: var(--sena-gray); margin-top: 4px; display: block;">Ingresa el código del programa SENA</small>
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Nombre del Curso *</label>
@@ -1368,6 +1377,7 @@
             document.getElementById('fichaForm').reset();
             document.getElementById('fichaId').value = '';
             document.getElementById('fichaCodigo').value = '';
+            document.getElementById('fichaCodigoPrograma').value = '';
             document.getElementById('fichaModal').classList.add('active');
         }
 
@@ -1382,6 +1392,7 @@
             document.getElementById('fichaModalTitle').textContent = 'Editar Ficha';
             document.getElementById('fichaId').value = ficha.id;
             document.getElementById('fichaCodigo').value = ficha.codigo || '';
+            document.getElementById('fichaCodigoPrograma').value = ficha.codigo_programa || '';
             document.getElementById('fichaNombre').value = ficha.nombre;
             document.getElementById('fichaNivel').value = ficha.nivel || '';
             document.getElementById('fichaVersion').value = ficha.version || '';
@@ -1409,7 +1420,7 @@
                             <label>Filtrar por Ficha</label>
                             <select id="filterCompetenciaFicha" class="form-control" onchange="filterCompetencias()">
                                 <option value="">Todas las fichas</option>
-                                ${fichas.map(f => `<option value="${f.id}">${f.nombre}</option>`).join('')}
+                                ${fichas.map(f => `<option value="${f.id}">${f.codigo}</option>`).join('')}
                             </select>
                         </div>
                     </div>
@@ -2070,7 +2081,7 @@
                             <label>Filtrar por Ficha</label>
                             <select id="filterProgramacionFicha" class="form-control" onchange="filterProgramaciones()">
                                 <option value="">Todas las fichas</option>
-                                ${fichas.map(f => `<option value="${f.id}">${f.nombre}</option>`).join('')}
+                                ${fichas.map(f => `<option value="${f.id}">${f.codigo}</option>`).join('')}
                             </select>
                         </div>
                         <div class="filter-item">
@@ -2481,12 +2492,17 @@
                                 <thead>
                                     <tr>
                                         <th>Código</th>
-                                        <th>Ficha</th>
-                                        <th>Competencias</th>
-                                        <th>Competencias Completas</th>
-                                        <th>Instructores Asignados</th>
-                                        <th>Horas Programadas</th>
-                                        <th>% Avance</th>
+                                        <th>Código Programa</th>
+                                        <th>ID</th>
+                                        <th>Nombre</th>
+                                        <th>Ciudad/Corregimiento</th>
+                                        <th>Fecha Inicio</th>
+                                        <th>Horas</th>
+                                        <th>Nivel</th>
+                                        <th>Versión</th>
+                                        <th>Instructor responsable</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -2500,15 +2516,21 @@
                                         
                                         return `
                                             <tr>
-                                                <td>${f.codigo || ''}</td>
+                                                <td><strong style="color: var(--sena-blue);">${f.codigo}</strong></td>
+                                                <td><strong style="color: var(--sena-orange);">${f.codigo_programa || ''}</strong></td>
+                                                <td>${f.id}</td>
                                                 <td><strong>${f.nombre}</strong></td>
-                                                <td>${compsDeFicha.length}</td>
-                                                <td>${compCompletas}/${compsDeFicha.length}</td>
-                                                <td>${instructoresUnicos}</td>
-                                                <td>${horasFicha}h</td>
+                                                <td>${f.ciudad}${f.corregimiento && f.corregimiento !== 'Principal' ? ` - ${f.corregimiento}` : ''}</td>
+                                                <td>${f.fecha_inicio}</td>
+                                                <td>${f.horas_totales}h</td>
+                                                <td>${f.nivel || ''}</td>
+                                                <td>${f.version || ''}</td>
+                                                <td>${instructor ? instructor.nombre : ''}</td>
+                                                <td><span class="status-badge status-${f.estado.toLowerCase()}">${f.estado}</span></td>
                                                 <td>
-                                                    <div class="progress-bar" style="width: 100px;">
-                                                        <div class="progress-fill ${porcentaje === 100 ? 'progress-complete' : porcentaje > 50 ? 'progress-partial' : 'progress-incomplete'}" style="width: ${porcentaje}%">${porcentaje}%</div>
+                                                    <div class="action-buttons">
+                                                        <button class="btn btn-sm btn-secondary" onclick="editFicha(${f.id})">Editar</button>
+                                                        <button class="btn btn-sm btn-danger" onclick="deleteFicha(${f.id})">Eliminar</button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -2549,11 +2571,14 @@
                                                         ${a.programaciones.map(p => {
                                                             const ficha = fichas.find(f => f.id === p.ficha_id);
                                                             const competencia = competencias.find(c => c.id === p.competencia_id);
+                                                            const ambiente = ambientes.find(a => a.id === p.ambiente_id);
                                                             return `<li>
                                                                 <b>${ficha?.codigo || ''}</b> - ${competencia?.nombre || ''} 
                                                                 <br>
                                                                 ${p.fecha_inicio || ''} 
                                                                 ${p.hora_inicio || ''} - ${p.hora_fin || ''}
+                                                                <br>
+                                                                Ambiente: ${ambiente?.nombre || ''}
                                                             </li>`;
                                                         }).join('')}
                                                     </ul>`
