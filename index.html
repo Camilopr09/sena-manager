@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión SENA</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- REMOVIDO: <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/index.min.js"></script> -->
+    <!-- EmailJS - Cargar DIRECTAMENTE en el HEAD -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/index.min.js"></script>
     <style>
         :root {
             --sena-blue: #003366;
@@ -1125,33 +1126,16 @@
         }
 
         // ========== EMAIL FUNCTIONS ==========
-        async function loadEmailJSScript() {
-            return new Promise((resolve) => {
-                if (window.emailjs) {
-                    resolve(true);
-                    return;
-                }
-                const script = document.createElement('script');
-                script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/index.min.js';
-                script.onload = () => resolve(true);
-                script.onerror = () => resolve(false);
-                document.head.appendChild(script);
-            });
-        }
-
         async function initEmailJS() {
             try {
-                const loaded = await loadEmailJSScript();
-                if (!loaded) {
-                    console.warn('⚠️ EmailJS no se pudo cargar - continuando sin envío de correos');
-                    emailReady = false;
-                    return false;
-                }
+                // Verificar si emailjs ya está cargado
                 if (!window.emailjs) {
-                    console.warn('⚠️ window.emailjs no está disponible');
+                    console.warn('⚠️ EmailJS no está disponible');
                     emailReady = false;
                     return false;
                 }
+                
+                // Inicializar directamente
                 window.emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
                 console.log('✅ EmailJS inicializado correctamente');
                 emailReady = true;
@@ -1165,15 +1149,18 @@
         }
 
         async function sendEmailToInstructor(instructor, ficha, competencia, programacion) {
+            // Si no está listo, intentar inicializar
             if (!emailReady) {
-                const ok = await initEmailJS();
-                if (!ok) {
-                    return { success: false, message: 'EmailJS no pudo inicializarse. Verifica tu conexión a internet.' };
-                }
+                console.warn('⚠️ EmailJS no está listo, intentando inicializar...');
+                await initEmailJS();
             }
-            if (!window.emailjs || !window.emailjs.send) {
-                return { success: false, message: 'EmailJS no está disponible' };
+
+            // Verificar que emailjs esté disponible
+            if (!window.emailjs) {
+                console.error('❌ EmailJS no está disponible en window');
+                return { success: false, message: 'EmailJS no está disponible. Recarga la página.' };
             }
+
             try {
                 const params = {
                     to_name: instructor.nombre,
@@ -1187,8 +1174,15 @@
                     ambiente_nombre: (ambientes.find(a => a.id === programacion.ambiente_id)?.nombre) || 'No asignado',
                     horas: programacion.horas
                 };
+                
                 console.log('📧 Enviando correo con parámetros:', params);
-                await window.emailjs.send(EMAILJS_CONFIG.SERVICE_ID, EMAILJS_CONFIG.TEMPLATE_ID, params);
+                const response = await window.emailjs.send(
+                    EMAILJS_CONFIG.SERVICE_ID, 
+                    EMAILJS_CONFIG.TEMPLATE_ID, 
+                    params
+                );
+                
+                console.log('✅ Correo enviado exitosamente:', response);
                 const key = `prog_${programacion.id || Date.now()}`;
                 emailLog[key] = {
                     fecha_envio: new Date().toLocaleDateString('es-CO'),
@@ -1199,7 +1193,7 @@
                 console.error('❌ Error enviando correo:', error);
                 return { 
                     success: false, 
-                    message: error?.text || error?.message || 'Error desconocido al enviar el correo' 
+                    message: error?.text || error?.message || 'Error al enviar el correo' 
                 };
             }
         }
