@@ -27,8 +27,11 @@ export default async function handler(req, res) {
                     }
                 ],
                 from: {
-                    email: 'noreply@sena-manager.com',
+                    email: 'envioprogramacionsenahp@pm.me',
                     name: 'Sistema de Gestión SENA'
+                },
+                reply_to: {
+                    email: 'envioprogramacionsenahp@pm.me'
                 },
                 content: [
                     {
