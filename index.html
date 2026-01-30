@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión SENA</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/index.min.js"></script>
+    <!-- REMOVIDO: <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/index.min.js"></script> -->
     <style>
         :root {
             --sena-blue: #003366;
@@ -1117,15 +1117,30 @@
         }
 
         // ========== EMAIL FUNCTIONS ==========
+        async function loadEmailJSScript() {
+            return new Promise((resolve) => {
+                if (window.emailjs) {
+                    resolve(true);
+                    return;
+                }
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/index.min.js';
+                script.onload = () => resolve(true);
+                script.onerror = () => resolve(false);
+                document.head.appendChild(script);
+            });
+        }
+
         async function initEmailJS() {
             try {
-                if (!window.emailjs || !window.emailjs.init) {
-                    console.warn('EmailJS no está disponible en la ventana');
+                const loaded = await loadEmailJSScript();
+                if (!loaded || !window.emailjs) {
+                    console.warn('❌ EmailJS no se pudo cargar');
                     emailReady = false;
                     return false;
                 }
-                emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
-                console.log('✅ EmailJS inicializado');
+                window.emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
+                console.log('✅ EmailJS inicializado correctamente');
                 emailReady = true;
                 return true;
             } catch (error) {
@@ -1138,10 +1153,12 @@
         async function sendEmailToInstructor(instructor, ficha, competencia, programacion) {
             if (!emailReady) {
                 const ok = await initEmailJS();
-                if (!ok) return { success: false, message: 'EmailJS no inicializado' };
+                if (!ok) {
+                    return { success: false, message: 'EmailJS no pudo inicializarse. Verifica tu conexión a internet.' };
+                }
             }
             if (!window.emailjs || !window.emailjs.send) {
-                return { success: false, message: 'EmailJS no disponible para enviar' };
+                return { success: false, message: 'EmailJS no está disponible' };
             }
             try {
                 const params = {
@@ -1153,11 +1170,12 @@
                     fecha_inicio: programacion.fecha_inicio,
                     hora_inicio: programacion.hora_inicio,
                     hora_fin: programacion.hora_fin,
-                    ambiente_nombre: (ambientes.find(a => a.id === programacion.ambiente_id)?.nombre) || '',
+                    ambiente_nombre: (ambientes.find(a => a.id === programacion.ambiente_id)?.nombre) || 'No asignado',
                     horas: programacion.horas
                 };
-                await emailjs.send(EMAILJS_CONFIG.SERVICE_ID, EMAILJS_CONFIG.TEMPLATE_ID, params);
-                const key = `prog_${programacion.id || programacion.tempId || Date.now()}`;
+                console.log('📧 Enviando correo con parámetros:', params);
+                await window.emailjs.send(EMAILJS_CONFIG.SERVICE_ID, EMAILJS_CONFIG.TEMPLATE_ID, params);
+                const key = `prog_${programacion.id || Date.now()}`;
                 emailLog[key] = {
                     fecha_envio: new Date().toLocaleDateString('es-CO'),
                     hora_envio: new Date().toLocaleTimeString('es-CO')
@@ -1165,7 +1183,10 @@
                 return { success: true };
             } catch (error) {
                 console.error('❌ Error enviando correo:', error);
-                return { success: false, message: error?.text || error?.message || 'Error desconocido' };
+                return { 
+                    success: false, 
+                    message: error?.text || error?.message || 'Error desconocido al enviar el correo' 
+                };
             }
         }
 
