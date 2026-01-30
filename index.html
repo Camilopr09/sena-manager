@@ -735,9 +735,9 @@
 
         // ========== EMAILJS CONFIGURATION ==========
         const EMAILJS_CONFIG = {
-            SERVICE_ID: 'service_sena_manager',
-            TEMPLATE_ID: 'template_sena_professional',
-            PUBLIC_KEY: 'YOUR_PUBLIC_KEY_HERE'
+            SERVICE_ID: 'service_k3jd1ra',
+            TEMPLATE_ID: 'template_ls0vey7',
+            PUBLIC_KEY: 'v9g3_AzPB9x7F8DfL'
         };
 
         // ========== GLOBAL VARIABLES ==========
@@ -2330,6 +2330,7 @@
                 // Enviar correo al instructor
                 const instructor = instructores.find(i => i.id === instructorId);
                 const competencia = competencias.find(c => c.id === competenciaId);
+                const ficha = fichas.find(f => f.id === fichaId);
                 if (instructor && competencia && ficha) {
                     const enviado = await sendEmailToInstructor(instructor, ficha, competencia, progData);
                     if (enviado) {
