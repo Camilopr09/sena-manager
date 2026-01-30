@@ -758,6 +758,7 @@
         let nextInstructorId = 1;
         let nextProgramacionId = 1;
         let emailLog = {}; // NUEVO: Registro de correos enviados
+        let emailReady = false; // NUEVO: estado de EmailJS
 
         // Constants
         const CIUDADES = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena', 'Riohacha', 'Maicao', 'Uribia', 'Manaure', 'Fonseca', 'San Juan del Cesar', 'Dibulla', 'Barrancas', 'Albania', 'Distracción', 'Hatonuevo', 'La Jagua del Pilar', 'Urumita', 'Villanueva', 'El Molino', 'Otras'];
@@ -1120,21 +1121,27 @@
             try {
                 if (!window.emailjs || !window.emailjs.init) {
                     console.warn('EmailJS no está disponible en la ventana');
+                    emailReady = false;
                     return false;
                 }
                 emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
                 console.log('✅ EmailJS inicializado');
+                emailReady = true;
                 return true;
             } catch (error) {
                 console.error('❌ Error inicializando EmailJS:', error);
+                emailReady = false;
                 return false;
             }
         }
 
         async function sendEmailToInstructor(instructor, ficha, competencia, programacion) {
+            if (!emailReady) {
+                const ok = await initEmailJS();
+                if (!ok) return { success: false, message: 'EmailJS no inicializado' };
+            }
             if (!window.emailjs || !window.emailjs.send) {
-                console.warn('EmailJS no disponible para enviar');
-                return false;
+                return { success: false, message: 'EmailJS no disponible para enviar' };
             }
             try {
                 const params = {
@@ -1155,10 +1162,10 @@
                     fecha_envio: new Date().toLocaleDateString('es-CO'),
                     hora_envio: new Date().toLocaleTimeString('es-CO')
                 };
-                return true;
+                return { success: true };
             } catch (error) {
                 console.error('❌ Error enviando correo:', error);
-                return false;
+                return { success: false, message: error?.text || error?.message || 'Error desconocido' };
             }
         }
 
@@ -2263,17 +2270,12 @@
                 return;
             }
 
-            try {
-                const enviado = await sendEmailToInstructor(instructor, ficha, competencia, programacion);
-                if (enviado) {
-                    updateProgramacionesTable();
-                    alert(`✅ Correo enviado a ${instructor.correo}\n\nFecha: ${new Date().toLocaleDateString('es-CO')}\nHora: ${new Date().toLocaleTimeString('es-CO')}`);
-                } else {
-                    alert('❌ No se pudo enviar el correo. Verifica la configuración de EmailJS.');
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('❌ Error al enviar el correo: ' + error.message);
+            const enviado = await sendEmailToInstructor(instructor, ficha, competencia, programacion);
+            if (enviado.success) {
+                updateProgramacionesTable();
+                alert(`✅ Correo enviado a ${instructor.correo}\n\nFecha: ${new Date().toLocaleDateString('es-CO')}\nHora: ${new Date().toLocaleTimeString('es-CO')}`);
+            } else {
+                alert('❌ No se pudo enviar el correo.\n\nDetalle: ' + enviado.message + '\nVerifica SERVICE_ID, TEMPLATE_ID y PUBLIC_KEY de EmailJS.');
             }
         }
 
@@ -2428,11 +2430,11 @@
                 const ficha = fichas.find(f => f.id === fichaId);
                 const programacionGuardada = programaciones.find(p => p.id === (id ? parseInt(id) : nextProgramacionId - 1));
                 if (instructor && competencia && ficha && programacionGuardada) {
-                    const enviado = await sendEmailToInstructor(instructor, ficha, competencia, programacionGuardada);
-                    if (enviado) {
+                    const resultadoCorreo = await sendEmailToInstructor(instructor, ficha, competencia, programacionGuardada);
+                    if (resultadoCorreo.success) {
                         alert('✅ Programación guardada y correo enviado al instructor');
                     } else {
-                        alert('✅ Programación guardada (sin envío de correo)');
+                        alert('✅ Programación guardada (sin envío de correo).\n\nDetalle: ' + resultadoCorreo.message);
                     }
                 } else {
                     alert('✅ Programación guardada correctamente');
