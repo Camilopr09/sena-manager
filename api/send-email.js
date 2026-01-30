@@ -1,3 +1,5 @@
+console.log("🚀 ENTRO AL ENDPOINT send-email");
+
 export default async function handler(req, res) {
     // Solo POST
     if (req.method !== 'POST') {
@@ -11,6 +13,7 @@ export default async function handler(req, res) {
         if (!email || !subject || !message) {
             return res.status(400).json({ error: 'Faltan datos requeridos' });
         }
+console.log("📤 VOY A LLAMAR A SENDGRID");
 
         // Llamar a SendGrid API
         const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
@@ -41,6 +44,7 @@ export default async function handler(req, res) {
                 ]
             })
         });
+console.log("📬 RESPUESTA SENDGRID:", sgRes?.status);
 
         if (!response.ok) {
             const errorData = await response.json();
