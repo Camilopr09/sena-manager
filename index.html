@@ -1710,7 +1710,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                                     <label class="form-label">Ficha *</label>
                                     <select id="competenciaFicha" class="form-control" required>
                                         <option value="">Seleccionar ficha</option>
-                                        ${fichas.map(f => `<option value="${f.id}">${f.nombre}</option>`).join('')}
+                                        ${fichas.map(f => `<option value="${f.id}">${f.codigo}</option>`).join('')}
                                     </select>
                                 </div>
                                 <div class="form-group">
