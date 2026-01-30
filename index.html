@@ -734,11 +734,12 @@
             RETRY_DELAY: 2000
         };
 
-        // ========== EMAILJS CONFIGURATION ==========
-        const EMAILJS_CONFIG = {
-            SERVICE_ID: 'service_k3jd1ra',      
-            TEMPLATE_ID: 'template_9dcbg0t',    
-            PUBLIC_KEY: 'v9g3_AzPB9x7F8DfL'     
+        // ========== MAILGUN CONFIGURATION ==========
+        const MAILGUN_CONFIG = {
+            DOMAIN: 'sandbox5a88080c78674a869e5f6628807fb39f.mailgun.org',
+            API_KEY: '1c7f8751-838164fc',
+            FROM_EMAIL: 'noreply@sandbox5a88080c78674a869e5f6628807fb39f.mailgun.org',
+            FROM_NAME: 'Sistema SENA'
         };
 
         // ========== GLOBAL VARIABLES ==========
@@ -1127,31 +1128,15 @@
 
         // ========== EMAIL FUNCTIONS ==========
         async function initEmailJS() {
-            try {
-                // Esperar a que emailjs esté disponible
-                let intentos = 0;
-                while (!window.emailjs && intentos < 10) {
-                    console.log('⏳ Esperando a EmailJS...');
-                    await new Promise(r => setTimeout(r, 500));
-                    intentos++;
-                }
-
-                if (!window.emailjs) {
-                    console.warn('⚠️ EmailJS no está disponible después de esperar');
-                    emailReady = false;
-                    return false;
-                }
-                
-                // Inicializar EmailJS
-                window.emailjs.init(EMAILJS_CONFIG.PUBLIC_KEY);
-                console.log('✅ EmailJS inicializado correctamente');
-                emailReady = true;
-                return true;
-            } catch (error) {
-                console.error('⚠️ Error inicializando EmailJS:', error.message);
+            // Mailgun no requiere inicialización, solo verificar que tenemos la API key
+            if (!MAILGUN_CONFIG.API_KEY || MAILGUN_CONFIG.API_KEY === 'tu_api_key_aqui') {
+                console.warn('⚠️ Mailgun API_KEY no configurado');
                 emailReady = false;
                 return false;
             }
+            console.log('✅ Mailgun configurado correctamente');
+            emailReady = true;
+            return true;
         }
 
         async function sendEmailToInstructor(instructor, ficha, competencia, programacion) {
@@ -1161,59 +1146,81 @@
             }
 
             if (!emailReady) {
-                console.warn('⚠️ EmailJS no está listo, intentando inicializar...');
+                console.warn('⚠️ Mailgun no está listo, intentando inicializar...');
                 const ok = await initEmailJS();
                 if (!ok) {
-                    return { success: false, message: 'EmailJS no disponible. Intenta recargar la página.' };
+                    return { success: false, message: 'Mailgun no configurado. Verifica tu API_KEY.' };
                 }
             }
 
-            // Verificar que emailjs esté disponible
-            if (!window.emailjs || typeof window.emailjs.send !== 'function') {
-                console.error('❌ window.emailjs.send no está disponible');
-                return { success: false, message: 'EmailJS no está disponible correctamente' };
-            }
-
             try {
-                // Preparar parámetros con valores por defecto
-                const params = {
-                    to_email: instructor.correo,
-                    to_name: instructor.nombre || 'Instructor',
-                    ficha_codigo: ficha.codigo || '',
-                    ficha_nombre: ficha.nombre || '',
-                    competencia_nombre: competencia.nombre || '',
-                    fecha_inicio: programacion.fecha_inicio || '',
-                    hora_inicio: programacion.hora_inicio || '',
-                    hora_fin: programacion.hora_fin || '',
-                    ambiente_nombre: (ambientes.find(a => a.id === programacion.ambiente_id)?.nombre) || 'No asignado',
-                    horas: programacion.horas || 0
-                };
-                
-                console.log('📧 Enviando correo:', params);
-                
-                // Enviar correo
-                const response = await window.emailjs.send(
-                    EMAILJS_CONFIG.SERVICE_ID, 
-                    EMAILJS_CONFIG.TEMPLATE_ID, 
-                    params
+                // Construir el texto del email (Mailgun lo convierte a HTML automáticamente)
+                const emailText = `
+Estimado ${instructor.nombre},
+
+Se le ha asignado una nueva programación:
+
+DETALLES DE LA PROGRAMACIÓN:
+═══════════════════════════════════════
+
+📋 Ficha: ${ficha.codigo} - ${ficha.nombre}
+🎯 Competencia: ${competencia.nombre}
+📅 Fecha de Inicio: ${programacion.fecha_inicio}
+⏰ Horario: ${programacion.hora_inicio} - ${programacion.hora_fin}
+⏱️  Horas: ${programacion.horas}h
+📍 Ambiente: ${(ambientes.find(a => a.id === programacion.ambiente_id)?.nombre) || 'No asignado'}
+
+═══════════════════════════════════════
+
+Queda atentamente invitado a ejecutar esta programación.
+
+Saludos cordiales,
+Sistema de Gestión SENA
+
+---
+Este es un mensaje automático, por favor no responda a este correo.
+                `;
+
+                // Preparar datos para Mailgun
+                const formData = new FormData();
+                formData.append('from', `${MAILGUN_CONFIG.FROM_NAME} <${MAILGUN_CONFIG.FROM_EMAIL}>`);
+                formData.append('to', instructor.correo);
+                formData.append('subject', `Nueva Programación: ${ficha.codigo} - ${competencia.nombre}`);
+                formData.append('text', emailText);
+
+                // Enviar via Mailgun API
+                const auth = 'Basic ' + btoa('api:' + MAILGUN_CONFIG.API_KEY);
+                const response = await fetch(
+                    `https://api.mailgun.net/v3/${MAILGUN_CONFIG.DOMAIN}/messages`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': auth
+                        },
+                        body: formData
+                    }
                 );
-                
-                console.log('✅ Correo enviado:', response);
-                
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Error enviando correo');
+                }
+
+                console.log('✅ Correo enviado exitosamente');
+
                 // Registrar en el log
                 const key = `prog_${programacion.id || Date.now()}`;
                 emailLog[key] = {
                     fecha_envio: new Date().toLocaleDateString('es-CO'),
                     hora_envio: new Date().toLocaleTimeString('es-CO')
                 };
-                
+
                 return { success: true };
             } catch (error) {
                 console.error('❌ Error en sendEmailToInstructor:', error);
-                const errorMessage = error?.text || error?.message || JSON.stringify(error);
-                return { 
-                    success: false, 
-                    message: `Error: ${errorMessage}` 
+                return {
+                    success: false,
+                    message: `Error: ${error.message}`
                 };
             }
         }
