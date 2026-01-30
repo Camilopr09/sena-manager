@@ -757,6 +757,7 @@
         let nextAmbienteId = 1;
         let nextInstructorId = 1;
         let nextProgramacionId = 1;
+        let emailLog = {}; // NUEVO: Registro de correos enviados
 
         // Constants
         const CIUDADES = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena', 'Riohacha', 'Maicao', 'Uribia', 'Manaure', 'Fonseca', 'San Juan del Cesar', 'Dibulla', 'Barrancas', 'Albania', 'Distracción', 'Hatonuevo', 'La Jagua del Pilar', 'Urumita', 'Villanueva', 'El Molino', 'Otras'];
@@ -2114,6 +2115,7 @@
                                         <th>Horas</th>
                                         <th>Fecha Inicio</th>
                                         <th>Estado</th>
+                                        <th>Correo Enviado</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
@@ -2150,7 +2152,7 @@
             if (!tbody) return;
 
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="empty-state">No hay programaciones registradas</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No hay programaciones registradas</td></tr>';
                 return;
             }
 
@@ -2159,6 +2161,8 @@
                 const competencia = competencias.find(c => c.id === p.competencia_id);
                 const instructor = instructores.find(i => i.id === p.instructor_id);
                 const ambiente = ambientes.find(a => a.id === p.ambiente_id);
+                const logKey = `prog_${p.id}`;
+                const envioInfo = emailLog[logKey];
 
                 return `
                     <tr>
@@ -2171,14 +2175,52 @@
                         <td>${p.fecha_inicio || 'N/A'}</td>
                         <td><span class="status-badge status-${p.estado.toLowerCase().replace(' ', '')}">${p.estado}</span></td>
                         <td>
-                            <div class="action-buttons">
+                            ${envioInfo 
+                                ? `<span style="color: #27ae60; font-weight: bold;">✅ Enviado<br><small>${envioInfo.fecha_envio}<br>${envioInfo.hora_envio}</small></span>`
+                                : `<span style="color: #e74c3c;">❌ No enviado</span>`
+                            }
+                        </td>
+                        <td>
+                            <div class="action-buttons" style="flex-direction: column; gap: 6px;">
                                 <button class="btn btn-sm btn-secondary" onclick="editProgramacion(${p.id})">Editar</button>
+                                <button class="btn btn-sm btn-success" onclick="reenviarCorreoProgramacion(${p.id})" title="Enviar correo al instructor">📧 Enviar</button>
                                 <button class="btn btn-sm btn-danger" onclick="deleteProgramacion(${p.id})">Eliminar</button>
                             </div>
                         </td>
                     </tr>
                 `;
             }).join('');
+        }
+
+        // NUEVO: Función para reenviar correo manualmente
+        async function reenviarCorreoProgramacion(programacionId) {
+            const programacion = programaciones.find(p => p.id === programacionId);
+            if (!programacion) {
+                alert('❌ Programación no encontrada');
+                return;
+            }
+
+            const instructor = instructores.find(i => i.id === programacion.instructor_id);
+            const competencia = competencias.find(c => c.id === programacion.competencia_id);
+            const ficha = fichas.find(f => f.id === programacion.ficha_id);
+
+            if (!instructor || !competencia || !ficha) {
+                alert('❌ Faltan datos para enviar el correo');
+                return;
+            }
+
+            try {
+                const enviado = await sendEmailToInstructor(instructor, ficha, competencia, programacion);
+                if (enviado) {
+                    updateProgramacionesTable();
+                    alert(`✅ Correo enviado a ${instructor.correo}\n\nFecha: ${new Date().toLocaleDateString('es-CO')}\nHora: ${new Date().toLocaleTimeString('es-CO')}`);
+                } else {
+                    alert('❌ No se pudo enviar el correo. Verifica la configuración de EmailJS.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error al enviar el correo: ' + error.message);
+            }
         }
 
         function getProgramacionModal() {
