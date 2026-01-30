@@ -1,3 +1,5 @@
+console.log("🚀 ENTRO AL ENDPOINT send-email");
+
 export default async function handler(req, res) {
     // Solo POST
     if (req.method !== 'POST') {
