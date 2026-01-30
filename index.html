@@ -2300,6 +2300,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                                         <th>Ambiente</th>
                                         <th>Horas</th>
                                         <th>Fecha Inicio</th>
+                                        <th>Fecha Fin</th>
                                         <th>Estado</th>
                                         <th>Correo Enviado</th>
                                         <th>Acciones</th>
@@ -2359,6 +2360,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                         <td>${ambiente?.nombre || 'N/A'}</td>
                         <td>${p.horas}h</td>
                         <td>${p.fecha_inicio || 'N/A'}</td>
+                        <td>${p.fecha_fin || 'N/A'}</td>
                         <td><span class="status-badge status-${p.estado.toLowerCase().replace(' ', '')}">${p.estado}</span></td>
                         <td>
                             ${envioInfo 
@@ -2450,6 +2452,10 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                             <input type="date" id="programacionFechaInicio" class="form-control" required>
                         </div>
                         <div class="form-group">
+                            <label class="form-label">Fecha Fin *</label>
+                            <input type="date" id="programacionFechaFin" class="form-control" required>
+                        </div>
+                        <div class="form-group">
                             <label class="form-label">Horario *</label>
                             <input type="time" id="programacionHoraInicio" class="form-control" required>
                             <input type="time" id="programacionHoraFin" class="form-control" required style="margin-top:8px;">
@@ -2490,6 +2496,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
             const ambienteId = parseInt(document.getElementById('programacionAmbiente').value);
             const horas = parseInt(document.getElementById('programacionHoras').value);
             const fechaInicio = document.getElementById('programacionFechaInicio').value;
+            const fechaFin = document.getElementById('programacionFechaFin').value;
             const horaInicio = document.getElementById('programacionHoraInicio').value;
             const horaFin = document.getElementById('programacionHoraFin').value;
             const estado = document.getElementById('programacionEstado').value;
@@ -2501,6 +2508,12 @@ Este es un mensaje automático, por favor no responda a este correo.`;
             }
             if (horaFin <= horaInicio) {
                 alert('❌ La hora de fin debe ser mayor que la hora de inicio.');
+                return;
+            }
+
+            // Validar que fecha de fin sea posterior a fecha de inicio
+            if (new Date(fechaFin) <= new Date(fechaInicio)) {
+                alert('❌ La fecha de fin debe ser posterior a la fecha de inicio.');
                 return;
             }
 
@@ -2526,6 +2539,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                 ambiente_id: ambienteId,
                 horas,
                 fecha_inicio: fechaInicio,
+                fecha_fin: fechaFin,
                 hora_inicio: horaInicio,
                 hora_fin: horaFin,
                 estado
@@ -2608,6 +2622,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
             document.getElementById('programacionAmbiente').value = prog.ambiente_id;
             document.getElementById('programacionHoras').value = prog.horas;
             document.getElementById('programacionFechaInicio').value = prog.fecha_inicio || '';
+            document.getElementById('programacionFechaFin').value = prog.fecha_fin || '';
             document.getElementById('programacionHoraInicio').value = prog.hora_inicio || '';
             document.getElementById('programacionHoraFin').value = prog.hora_fin || '';
             document.getElementById('programacionEstado').value = prog.estado;

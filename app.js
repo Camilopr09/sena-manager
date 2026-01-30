@@ -236,6 +236,32 @@ function loadLocalData() {
         }
     ];
     nextInstructorId = 2;
+
+    programaciones = [
+        {
+            id: 1,
+            ficha_id: 1,
+            competencia_id: 1,
+            instructor_id: 1,
+            ambiente_id: 2,
+            horas: 40,
+            fecha_inicio: '01/01/2025',
+            fecha_fin: '15/03/2025',
+            estado: 'En ejecución'
+        },
+        {
+            id: 2,
+            ficha_id: 1,
+            competencia_id: 2,
+            instructor_id: 1,
+            ambiente_id: 2,
+            horas: 40,
+            fecha_inicio: '16/03/2025',
+            fecha_fin: '30/06/2025',
+            estado: 'Programada'
+        }
+    ];
+    nextProgramacionId = 3;
 }
 
 function setupEventListeners() {
@@ -726,7 +752,8 @@ function renderProgramacion(container) {
                 ${programaciones.map(p => `
                     <div style="padding: 10px; border: 1px solid #ddd; margin: 5px 0; border-radius: 4px;">
                         <strong>Ficha ID: ${p.ficha_id}</strong> | Competencia ID: ${p.competencia_id}<br>
-                        Instructor ID: ${p.instructor_id} | Horas: ${p.horas} | ${p.estado}
+                        Instructor ID: ${p.instructor_id} | Horas: ${p.horas} | ${p.estado}<br>
+                        <strong>Fecha de inicio:</strong> ${p.fecha_inicio || 'N/A'} | <strong>Fecha de fin:</strong> ${p.fecha_fin || 'N/A'}
                     </div>
                 `).join('')}
             </div>
