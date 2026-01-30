@@ -944,6 +944,10 @@
             
             if (user) {
                 currentUser = user;
+                // NUEVO: Guardar sesión en localStorage
+                localStorage.setItem('sena_user', JSON.stringify(user));
+                localStorage.setItem('sena_session', 'true');
+                
                 document.getElementById('loginScreen').classList.remove('active');
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('appContainer').classList.add('active');
@@ -961,6 +965,10 @@
         function handleLogout() {
             if (confirm('¿Está seguro que desea cerrar sesión?')) {
                 currentUser = null;
+                // NUEVO: Limpiar localStorage al cerrar sesión
+                localStorage.removeItem('sena_user');
+                localStorage.removeItem('sena_session');
+                
                 document.getElementById('appContainer').classList.remove('active');
                 document.getElementById('loginScreen').style.display = 'flex';
                 document.getElementById('loginForm').reset();
@@ -2791,6 +2799,28 @@
         // ========== PAGE INITIALIZATION ========== 
         async function initApp() {
             console.log('🚀 Iniciando aplicación...');
+            
+            // NUEVO: Verificar si hay sesión guardada
+            const savedSession = localStorage.getItem('sena_session');
+            const savedUser = localStorage.getItem('sena_user');
+            
+            if (savedSession === 'true' && savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    console.log('✅ Sesión recuperada:', currentUser.usuario);
+                    
+                    // Mostrar app y ocultar login
+                    document.getElementById('loginScreen').classList.remove('active');
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('appContainer').classList.add('active');
+                    document.getElementById('currentUser').textContent = currentUser.usuario;
+                } catch (error) {
+                    console.error('❌ Error recuperando sesión:', error);
+                    localStorage.removeItem('sena_user');
+                    localStorage.removeItem('sena_session');
+                }
+            }
+            
             updateConnectionStatus('connecting');
             
             const supabaseReady = await initSupabase();
@@ -2805,6 +2835,12 @@
             
             setupEventListeners();
             await initEmailJS();
+            
+            // NUEVO: Si hay sesión, ir al resumen
+            if (currentUser) {
+                showSection('resumen');
+            }
+            
             console.log('✅ Aplicación lista');
         }
 
