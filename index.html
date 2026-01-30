@@ -733,12 +733,11 @@
             RETRY_DELAY: 2000
         };
 
-        // ========== MAILGUN CONFIGURATION ==========
-        const MAILGUN_CONFIG = {
-            DOMAIN: 'sandbox5a88080c78674a869e5f6628807fb39f.mailgun.org',
-            API_KEY: 'key-1c7f8751-838164fc',  // ⬅️ AGREGA "key-" AL INICIO
-            FROM_EMAIL: 'noreply@sandbox5a88080c78674a869e5f6628807fb39f.mailgun.org',
-            FROM_NAME: 'Sistema SENA'
+        // ========== SENDGRID CONFIGURATION ==========
+        const SENDGRID_CONFIG = {
+            API_KEY: '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',
+            FROM_EMAIL: 'noreply@sena-manager.com',
+            FROM_NAME: 'Sistema de Gestión SENA'
         };
 
         // ========== GLOBAL VARIABLES ==========
@@ -1127,13 +1126,13 @@
 
         // ========== EMAIL FUNCTIONS ==========
         async function initEmailJS() {
-            // Mailgun no requiere inicialización
-            if (!MAILGUN_CONFIG.API_KEY) {
-                console.warn('⚠️ Mailgun API_KEY no configurado');
+            // SendGrid ya está configurado
+            if (!SENDGRID_CONFIG.API_KEY) {
+                console.warn('⚠️ SendGrid API_KEY no configurado');
                 emailReady = false;
                 return false;
             }
-            console.log('✅ Mailgun listo para enviar correos');
+            console.log('✅ SendGrid listo para enviar correos');
             emailReady = true;
             return true;
         }
@@ -1168,31 +1167,43 @@ Sistema de Gestión SENA
 ---
 Este es un mensaje automático, por favor no responda a este correo.`;
 
-                // ✅ Usar el servidor proxy local
-                const response = await fetch('/api/send-email', {
+                // ✅ SendGrid API v3
+                const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
                     method: 'POST',
                     headers: {
+                        'Authorization': `Bearer ${SENDGRID_CONFIG.API_KEY}`,
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        email: instructor.correo,
-                        name: instructor.nombre,
-                        subject: `Nueva Programación: ${ficha.codigo} - ${competencia.nombre}`,
-                        message: emailText
+                        personalizations: [
+                            {
+                                to: [{ email: instructor.correo, name: instructor.nombre }],
+                                subject: `Nueva Programación: ${ficha.codigo} - ${competencia.nombre}`
+                            }
+                        ],
+                        from: {
+                            email: SENDGRID_CONFIG.FROM_EMAIL,
+                            name: SENDGRID_CONFIG.FROM_NAME
+                        },
+                        reply_to: {
+                            email: SENDGRID_CONFIG.FROM_EMAIL
+                        },
+                        content: [
+                            {
+                                type: 'text/plain',
+                                value: emailText
+                            }
+                        ]
                     })
                 });
 
                 if (!response.ok) {
-                    throw new Error('Error al enviar correo por el servidor');
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMsg = errorData.errors?.[0]?.message || `Error ${response.status}`;
+                    throw new Error(errorMsg);
                 }
 
-                const result = await response.json();
-                
-                if (!result.success) {
-                    throw new Error(result.error || 'Error desconocido');
-                }
-
-                console.log('✅ Correo enviado exitosamente');
+                console.log('✅ Correo enviado exitosamente por SendGrid');
 
                 const key = `prog_${programacion.id || Date.now()}`;
                 emailLog[key] = {
