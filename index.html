@@ -1142,8 +1142,13 @@
         async function initEmailJS() {
             try {
                 const loaded = await loadEmailJSScript();
-                if (!loaded || !window.emailjs) {
-                    console.warn('❌ EmailJS no se pudo cargar');
+                if (!loaded) {
+                    console.warn('⚠️ EmailJS no se pudo cargar - continuando sin envío de correos');
+                    emailReady = false;
+                    return false;
+                }
+                if (!window.emailjs) {
+                    console.warn('⚠️ window.emailjs no está disponible');
                     emailReady = false;
                     return false;
                 }
@@ -1152,7 +1157,8 @@
                 emailReady = true;
                 return true;
             } catch (error) {
-                console.error('❌ Error inicializando EmailJS:', error);
+                console.error('⚠️ Error inicializando EmailJS:', error.message);
+                console.warn('El sistema continuará sin envío automático de correos');
                 emailReady = false;
                 return false;
             }
@@ -2663,7 +2669,9 @@
                                         const horasFicha = programaciones.filter(p => p.ficha_id === f.id).reduce((sum, p) => sum + p.horas, 0);
                                         const horasTotales = compsDeFicha.reduce((sum, c) => sum + c.horas_totales, 0);
                                         const porcentaje = horasTotales > 0 ? Math.round((horasFicha / horasTotales) * 100) : 0;
+                                        const instructorResponsable = instructores.find(i => i.id === f.instructor_responsable_id);
                                         
+
                                         return `
                                             <tr>
                                                 <td><strong style="color: var(--sena-blue);">${f.codigo}</strong></td>
@@ -2675,7 +2683,7 @@
                                                 <td>${f.horas_totales}h</td>
                                                 <td>${f.nivel || ''}</td>
                                                 <td>${f.version || ''}</td>
-                                                <td>${instructor ? instructor.nombre : ''}</td>
+                                                <td>${instructorResponsable ? instructorResponsable.nombre : ''}</td>
                                                 <td><span class="status-badge status-${f.estado.toLowerCase()}">${f.estado}</span></td>
                                                 <td>
                                                     <div class="action-buttons">
