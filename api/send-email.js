@@ -30,11 +30,11 @@ export default async function handler(req, res) {
                     }
                 ],
                 from: {
-                    email: 'envioprogramacionsenahp@pm.me',
+                    email: 'notificaciones@coordinacioncaas.com',
                     name: 'Sistema de Gestión SENA'
                 },
                 reply_to: {
-                    email: 'envioprogramacionsenahp@pm.me'
+                    email: 'notificaciones@coordinacioncaas.com'
                 },
                 content: [
                     {
