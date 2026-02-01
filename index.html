@@ -387,7 +387,7 @@
         .toggle-sidebar-btn {
             position: fixed;
             top: 20px;
-            left: 20px;
+            left: 300px;
             z-index: 1001;
             background: white;
             border: none;
@@ -401,6 +401,10 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             opacity: 0;
+        }
+        
+        .sidebar.collapsed ~ .toggle-sidebar-btn {
+            left: 20px;
         }
         
         .app-container.active .toggle-sidebar-btn {
@@ -425,11 +429,6 @@
         
         .sidebar.collapsed ~ .toggle-sidebar-btn svg {
             transform: rotate(180deg);
-        }
-        
-        .toggle-sidebar-btn.sidebar-hidden {
-            left: 300px;
-            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .section {
