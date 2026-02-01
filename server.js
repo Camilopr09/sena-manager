@@ -27,7 +27,10 @@ app.post('/api/send-email', async (req, res) => {
 
         const msg = {
             to: email,
-            from: EMAIL_CONFIG.FROM_EMAIL,
+            from: {
+                email: EMAIL_CONFIG.FROM_EMAIL,
+                name: EMAIL_CONFIG.FROM_NAME
+            },
             replyTo: email,
             subject: subject,
             text: message,
