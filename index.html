@@ -1100,6 +1100,85 @@
             }
         }
 
+        // ========== DUPLICATE FICHA WITH COMPETENCIES ==========
+        async function duplicateFicha(id) {
+            const fichaOriginal = fichas.find(f => f.id === id);
+            if (!fichaOriginal) {
+                alert('❌ No se encontró la ficha');
+                return;
+            }
+
+            // Crear nueva ficha con código + "+"
+            const nuevaCodigo = fichaOriginal.codigo + '+';
+            
+            // Validar que el nuevo código sea único
+            if (fichas.some(f => f.codigo === nuevaCodigo)) {
+                alert('❌ El código duplicado ya existe. Intenta eliminar la copia anterior.');
+                return;
+            }
+
+            try {
+                // Crear la nueva ficha duplicada
+                const nuevaFicha = {
+                    id: nextFichaId++,
+                    codigo: nuevaCodigo,
+                    codigo_programa: fichaOriginal.codigo_programa,
+                    nombre: fichaOriginal.nombre + ' (Duplicada)',
+                    ciudad: fichaOriginal.ciudad,
+                    corregimiento: fichaOriginal.corregimiento,
+                    fecha_inicio: fichaOriginal.fecha_inicio,
+                    fecha_fin: fichaOriginal.fecha_fin,
+                    horas_totales: fichaOriginal.horas_totales,
+                    estado: fichaOriginal.estado,
+                    nivel: fichaOriginal.nivel,
+                    version: fichaOriginal.version,
+                    instructor_responsable_id: fichaOriginal.instructor_responsable_id
+                };
+
+                // Guardar la ficha en la base de datos
+                if (isConnected) {
+                    const { error: fichaError } = await supabaseClient
+                        .from('fichas')
+                        .insert([nuevaFicha]);
+                    if (fichaError) throw fichaError;
+                }
+
+                fichas.push(nuevaFicha);
+
+                // Duplicar las competencias asociadas
+                const competenciasOriginal = competencias.filter(c => c.ficha_id === id);
+                const nuevasCompetencias = competenciasOriginal.map(comp => ({
+                    id: nextCompetenciaId++,
+                    ficha_id: nuevaFicha.id,
+                    nombre: comp.nombre,
+                    descripcion: comp.descripcion,
+                    horas_totales: comp.horas_totales,
+                    resultado_aprendizaje: comp.resultado_aprendizaje,
+                    criterios_evaluacion: comp.criterios_evaluacion,
+                    conocimientos: comp.conocimientos,
+                    saber_hacer: comp.saber_hacer,
+                    saber_ser: comp.saber_ser
+                }));
+
+                // Guardar las competencias en la base de datos
+                if (nuevasCompetencias.length > 0) {
+                    if (isConnected) {
+                        const { error: compError } = await supabaseClient
+                            .from('competencias')
+                            .insert(nuevasCompetencias);
+                        if (compError) throw compError;
+                    }
+                    competencias.push(...nuevasCompetencias);
+                }
+
+                updateFichasTable();
+                alert('✅ Ficha duplicada correctamente.\n\n📌 Nota: El código de la ficha duplicada tiene un signo + al final para identificarla.\n\nNombre: ' + nuevaFicha.nombre + '\nCódigo: ' + nuevaCodigo);
+            } catch (error) {
+                console.error('❌ Error al duplicar:', error);
+                alert('❌ Error al duplicar la ficha: ' + (error.message || 'Error desconocido'));
+            }
+        }
+
         // ========== HELPER FUNCTIONS ==========
         function calcularHorasProgramadas(competenciaId) {
             return programaciones
@@ -1461,6 +1540,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                 <td>
                     <div class="action-buttons">
                         <button class="btn btn-sm btn-secondary" onclick="editFicha(${f.id})">Editar</button>
+                        <button class="btn btn-sm btn-success" onclick="duplicateFicha(${f.id})" title="Duplicar ficha con competencias">📋 Duplicar</button>
                         <button class="btn btn-sm btn-danger" onclick="deleteFicha(${f.id})">Eliminar</button>
                     </div>
                 </td>
