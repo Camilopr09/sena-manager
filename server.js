@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const axios = require('axios');
+const sgMail = require('@sendgrid/mail');
 require('dotenv').config();
 
 const app = express();
@@ -13,19 +13,39 @@ const EMAIL_CONFIG = {
     FROM_NAME: 'Sistema de Gestión SENA'
 };
 
-// Ruta para enviar correos a través de Formspree
+// Inicializar SendGrid
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+// Ruta para enviar correos a través de SendGrid con Domain Authentication
 app.post('/api/send-email', async (req, res) => {
     try {
         const { email, name, subject, message } = req.body;
 
-        const response = await axios.post('https://formspree.io/f/xojwnkdy', {
-            email: EMAIL_CONFIG.FROM_EMAIL,  // Usar el correo configurado como remitente
-            name: EMAIL_CONFIG.FROM_NAME,
-            subject,
-            message: `De: ${name} (${email})\n\n${message}`
-        });
+        if (!process.env.SENDGRID_API_KEY) {
+            throw new Error('SENDGRID_API_KEY no está configurada');
+        }
 
-        res.json({ success: true, data: response.data });
+        const msg = {
+            to: email,
+            from: EMAIL_CONFIG.FROM_EMAIL,
+            replyTo: email,
+            subject: subject,
+            text: message,
+            html: `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                    <pre style="white-space: pre-wrap; word-wrap: break-word;">${message}</pre>
+                    <hr style="border: none; border-top: 1px solid #ddd; margin-top: 20px;">
+                    <small style="color: #999;">
+                        Este es un mensaje automático del Sistema de Gestión SENA.
+                        Por favor no responda a este correo.
+                    </small>
+                </div>
+            `
+        };
+
+        await sgMail.send(msg);
+
+        res.json({ success: true, message: 'Correo enviado exitosamente' });
     } catch (error) {
         console.error('Error enviando correo:', error.message);
         res.status(500).json({ success: false, error: error.message });
