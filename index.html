@@ -283,6 +283,12 @@
             overflow-y: auto;
             box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
             backdrop-filter: blur(20px);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-280px);
         }
         
         .sidebar::-webkit-scrollbar {
@@ -370,6 +376,60 @@
             padding: 40px;
             background-color: var(--bg-light);
             min-height: 100vh;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .main-content.expanded {
+            margin-left: 0;
+        }
+        
+        /* Toggle Sidebar Button */
+        .toggle-sidebar-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: white;
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+        }
+        
+        .app-container.active .toggle-sidebar-btn {
+            opacity: 1;
+        }
+        
+        .toggle-sidebar-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+        
+        .toggle-sidebar-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .toggle-sidebar-btn svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--primary-700);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .sidebar.collapsed ~ .toggle-sidebar-btn svg {
+            transform: rotate(180deg);
+        }
+        
+        .toggle-sidebar-btn.sidebar-hidden {
+            left: 300px;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .section {
@@ -1090,6 +1150,11 @@
             </div>
         </div>
         
+        <!-- Toggle Sidebar Button -->
+        <button class="toggle-sidebar-btn" onclick="toggleSidebar()" title="Mostrar/Ocultar menú">
+            <i data-lucide="panel-left"></i>
+        </button>
+        
         <!-- Main Content -->
         <div class="main-content">
             <div id="mainContent"></div>
@@ -1349,6 +1414,35 @@
         }
 
         // ========== NAVIGATION ==========
+        // ========== SIDEBAR TOGGLE ==========
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.querySelector('.main-content');
+            const toggleBtn = document.querySelector('.toggle-sidebar-btn');
+            
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+            
+            // Guardar preferencia en localStorage
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            localStorage.setItem('sidebarCollapsed', isCollapsed);
+            
+            // Re-inicializar iconos
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 50);
+        }
+        
+        function loadSidebarState() {
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed) {
+                document.querySelector('.sidebar')?.classList.add('collapsed');
+                document.querySelector('.main-content')?.classList.add('expanded');
+            }
+        }
+        
         function showSection(sectionId) {
             currentSection = sectionId;
             
@@ -3442,6 +3536,9 @@ Este es un mensaje automático, por favor no responda a este correo.`;
             
             setupEventListeners();
             await initEmailJS();
+            
+            // Cargar estado del sidebar
+            loadSidebarState();
             
             // Inicializar iconos Lucide
             if (typeof lucide !== 'undefined') {
