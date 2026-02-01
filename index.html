@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión SENA</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Lucide Icons - Estilo Apple SF Symbols -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Eliminamos EmailJS completamente -->
     <style>
         :root {
@@ -222,6 +224,31 @@
         .btn-sm {
             padding: 6px 12px;
             font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .btn svg {
+            display: inline-block;
+            vertical-align: middle;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .action-buttons .btn-sm {
+            min-width: 36px;
+            padding: 8px;
+        }
+        
+        .action-buttons .btn-sm svg {
+            margin: 0;
         }
         
         .error-message {
@@ -323,6 +350,17 @@
         .menu-item-icon {
             margin-right: 12px;
             font-size: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+        }
+        
+        .menu-item-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke-width: 2;
         }
         
         /* Main Content */
@@ -386,6 +424,21 @@
             font-size: 42px;
             margin-bottom: 16px;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, var(--primary-100) 0%, var(--primary-200) 100%);
+            border-radius: 14px;
+            padding: 12px;
+        }
+        
+        .card-icon svg {
+            width: 32px;
+            height: 32px;
+            stroke: var(--primary-700);
+            stroke-width: 2;
         }
         
         .card-value {
@@ -1010,29 +1063,29 @@
             </div>
             <div class="sidebar-menu">
                 <div class="menu-item active" data-section="resumen">
-                    <span class="menu-item-icon">📊</span> Resumen
+                    <span class="menu-item-icon"><i data-lucide="bar-chart-3"></i></span> Resumen
                 </div>
                 <div class="menu-item" data-section="fichas">
-                    <span class="menu-item-icon">📋</span> Fichas
+                    <span class="menu-item-icon"><i data-lucide="file-text"></i></span> Fichas
                 </div>
                 <div class="menu-item" data-section="competencias">
-                    <span class="menu-item-icon">🎯</span> Competencias
+                    <span class="menu-item-icon"><i data-lucide="target"></i></span> Competencias
                 </div>
                 <div class="menu-item" data-section="ambientes">
-                    <span class="menu-item-icon">🏢</span> Ambientes
+                    <span class="menu-item-icon"><i data-lucide="building-2"></i></span> Ambientes
                 </div>
                 <div class="menu-item" data-section="instructores">
-                    <span class="menu-item-icon">👨‍🏫</span> Instructores
+                    <span class="menu-item-icon"><i data-lucide="users"></i></span> Instructores
                 </div>
                 <div class="menu-item" data-section="programacion">
-                    <span class="menu-item-icon">📅</span> Programación
+                    <span class="menu-item-icon"><i data-lucide="calendar"></i></span> Programación
                 </div>
                 <div class="menu-item" data-section="reportes">
-                    <span class="menu-item-icon">📈</span> Reportes
+                    <span class="menu-item-icon"><i data-lucide="trending-up"></i></span> Reportes
                 </div>
                 <hr style="margin: 20px 0; border: none; border-top: 1px solid rgba(255, 255, 255, 0.2);">
                 <div class="menu-item" onclick="handleLogout()">
-                    <span class="menu-item-icon">🚪</span> Cerrar Sesión
+                    <span class="menu-item-icon"><i data-lucide="log-out"></i></span> Cerrar Sesión
                 </div>
             </div>
         </div>
@@ -1315,6 +1368,13 @@
                 case 'programacion': renderProgramacion(mainContent); break;
                 case 'reportes': renderReportes(mainContent); break;
             }
+            
+            // Re-inicializar iconos Lucide después de renderizar
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 50);
         }
 
         // ========== CRUD FUNCTIONS FOR FICHAS ==========
@@ -1707,32 +1767,32 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                     <h2 style="margin-bottom: 24px; color: var(--sena-blue);">Panel de Resumen</h2>
                     <div class="dashboard-cards">
                         <div class="dashboard-card" onclick="showSection('fichas')">
-                            <div class="card-icon">📋</div>
+                            <div class="card-icon"><i data-lucide="file-text"></i></div>
                             <div class="card-value">${totalFichas}</div>
                             <div class="card-label">Total de Fichas</div>
                         </div>
                         <div class="dashboard-card" onclick="showSection('instructores')">
-                            <div class="card-icon">👨‍🏫</div>
+                            <div class="card-icon"><i data-lucide="users"></i></div>
                             <div class="card-value">${totalInstructores}</div>
                             <div class="card-label">Total de Instructores</div>
                         </div>
                         <div class="dashboard-card" onclick="showSection('ambientes')">
-                            <div class="card-icon">🏢</div>
+                            <div class="card-icon"><i data-lucide="building-2"></i></div>
                             <div class="card-value">${totalAmbientes}</div>
                             <div class="card-label">Total de Ambientes</div>
                         </div>
                         <div class="dashboard-card" onclick="showSection('programacion')">
-                            <div class="card-icon">⏰</div>
+                            <div class="card-icon"><i data-lucide="clock"></i></div>
                             <div class="card-value">${horasTotalesProgramadas}</div>
                             <div class="card-label">Horas Totales Programadas</div>
                         </div>
                         <div class="dashboard-card" onclick="showSection('competencias')">
-                            <div class="card-icon">⚠️</div>
+                            <div class="card-icon"><i data-lucide="alert-circle"></i></div>
                             <div class="card-value">${competenciasPendientes}</div>
                             <div class="card-label">Competencias Pendientes</div>
                         </div>
                         <div class="dashboard-card" onclick="showSection('fichas')">
-                            <div class="card-icon">✅</div>
+                            <div class="card-icon"><i data-lucide="check-circle"></i></div>
                             <div class="card-value">${fichasActivas}</div>
                             <div class="card-label">Fichas Activas</div>
                         </div>
@@ -1781,7 +1841,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                                 <option value="">Todos los estados</option>
                                 ${ESTADOS_FICHA.map(e => `<option value="${e}">${e}</option>`).join('')}
                             </select>
-                            <button class="btn btn-primary" onclick="openFichaModal()">+ Nueva Ficha</button>
+                            <button class="btn btn-primary" onclick="openFichaModal()"><i data-lucide="plus" style="width: 16px; height: 16px; margin-right: 6px;"></i> Nueva Ficha</button>
                         </div>
                     </div>
                     
@@ -1858,14 +1918,21 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                 <td><span class="status-badge status-${f.estado.toLowerCase()}">${f.estado}</span></td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn btn-sm btn-secondary" onclick="editFicha(${f.id})">Editar</button>
-                        <button class="btn btn-sm btn-success" onclick="duplicateFicha(${f.id})" title="Duplicar ficha con competencias">📋 Duplicar</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteFicha(${f.id})">Eliminar</button>
+                        <button class="btn btn-sm btn-secondary" onclick="editFicha(${f.id})"><i data-lucide="edit-2" style="width: 14px; height: 14px;"></i></button>
+                        <button class="btn btn-sm btn-success" onclick="duplicateFicha(${f.id})" title="Duplicar ficha con competencias"><i data-lucide="copy" style="width: 14px; height: 14px;"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteFicha(${f.id})"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
                     </div>
                 </td>
             </tr>
         `;
     }).join('');
+    
+    // Re-inicializar iconos
+    setTimeout(() => {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }, 50);
 }
 
         function getFichaModal() {
@@ -1991,7 +2058,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                 <section class="section active">
                     <div class="section-header">
                         <h2>Gestión de Competencias</h2>
-                        <button class="btn btn-primary" onclick="openCompetenciaModal()">+ Nueva Competencia</button>
+                        <button class="btn btn-primary" onclick="openCompetenciaModal()"><i data-lucide="plus" style="width: 16px; height: 16px; margin-right: 6px;"></i> Nueva Competencia</button>
                     </div>
                     
                     <div class="filters">
@@ -2086,13 +2153,20 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                 </td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn btn-sm btn-secondary" onclick="editCompetencia(${c.id})">Editar</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteCompetencia(${c.id})">Eliminar</button>
+                        <button class="btn btn-sm btn-secondary" onclick="editCompetencia(${c.id})"><i data-lucide="edit-2" style="width: 14px; height: 14px;"></i></button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCompetencia(${c.id})"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
                     </div>
                 </td>
             </tr>
         `;
     }).join('');
+    
+    // Re-inicializar iconos
+    setTimeout(() => {
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }, 50);
 }
 
         function getCompetenciaModal() {
@@ -2210,7 +2284,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                 <section class="section active">
                     <div class="section-header">
                         <h2>Gestión de Ambientes</h2>
-                        <button class="btn btn-primary" onclick="openAmbienteModal()">+ Nuevo Ambiente</button>
+                        <button class="btn btn-primary" onclick="openAmbienteModal()"><i data-lucide="plus" style="width: 16px; height: 16px; margin-right: 6px;"></i> Nuevo Ambiente</button>
                     </div>
                     
                     <div class="filters">
@@ -2291,12 +2365,19 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                     <td><span class="status-badge ${a.disponible ? 'status-activo' : 'status-suspendido'}">${a.disponible ? 'Disponible' : 'No disponible'}</span></td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn btn-sm btn-secondary" onclick="editAmbiente(${a.id})">Editar</button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteAmbiente(${a.id})">Eliminar</button>
+                            <button class="btn btn-sm btn-secondary" onclick="editAmbiente(${a.id})"><i data-lucide="edit-2" style="width: 14px; height: 14px;"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteAmbiente(${a.id})"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
                         </div>
                     </td>
                 </tr>
             `).join('');
+            
+            // Re-inicializar iconos
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 50);
         }
 
         function getAmbienteModal() {
@@ -2436,7 +2517,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                 <section class="section active">
                     <div class="section-header">
                         <h2>Gestión de Instructores</h2>
-                        <button class="btn btn-primary" onclick="openInstructorModal()">+ Nuevo Instructor</button>
+                        <button class="btn btn-primary" onclick="openInstructorModal()"><i data-lucide="plus" style="width: 16px; height: 16px; margin-right: 6px;"></i> Nuevo Instructor</button>
                     </div>
                     
                     <div class="table-container">
@@ -2493,13 +2574,20 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                         <td><span style="color: ${horasDisponibles < 10 ? '#e74c3c' : '#27ae60'}; font-weight: bold;">${horasDisponibles}h</span></td>
                         <td>
                             <div class="action-buttons">
-                                <button class="btn btn-sm btn-secondary" onclick="editInstructor(${i.id})">Editar</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteInstructor(${i.id})">Eliminar</button>
+                                <button class="btn btn-sm btn-secondary" onclick="editInstructor(${i.id})"><i data-lucide="edit-2" style="width: 14px; height: 14px;"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteInstructor(${i.id})"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
                             </div>
                         </td>
                     </tr>
                 `;
             }).join('');
+            
+            // Re-inicializar iconos
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 50);
         }
 
         function getInstructorModal() {
@@ -2663,7 +2751,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                 <section class="section active">
                     <div class="section-header">
                         <h2>Programación de Competencias</h2>
-                        <button class="btn btn-primary" onclick="openProgramacionModal()">+ Nueva Programación</button>
+                        <button class="btn btn-primary" onclick="openProgramacionModal()"><i data-lucide="plus" style="width: 16px; height: 16px; margin-right: 6px;"></i> Nueva Programación</button>
                     </div>
                     
                     <div class="filters">
@@ -2763,20 +2851,27 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                         <td><span class="status-badge status-${p.estado.toLowerCase().replace(' ', '')}">${p.estado}</span></td>
                         <td>
                             ${envioInfo 
-                                ? `<span style="color: #27ae60; font-weight: bold;">✅ Enviado<br><small>${envioInfo.fecha_envio}<br>${envioInfo.hora_envio}</small></span>`
-                                : `<span style="color: #e74c3c;">❌ No enviado</span>`
+                                ? `<span style="color: #27ae60; font-weight: bold; display: flex; align-items: center; gap: 4px;"><i data-lucide="check-circle" style="width: 16px; height: 16px;"></i> Enviado<br><small>${envioInfo.fecha_envio}<br>${envioInfo.hora_envio}</small></span>`
+                                : `<span style="color: #e74c3c; display: flex; align-items: center; gap: 4px;"><i data-lucide="x-circle" style="width: 16px; height: 16px;"></i> No enviado</span>`
                             }
                         </td>
                         <td>
                             <div class="action-buttons" style="flex-direction: column; gap: 6px;">
-                                <button class="btn btn-sm btn-secondary" onclick="editProgramacion(${p.id})">Editar</button>
-                                <button class="btn btn-sm btn-success" onclick="reenviarCorreoProgramacion(${p.id})" title="Enviar correo al instructor">📧 Enviar</button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteProgramacion(${p.id})">Eliminar</button>
+                                <button class="btn btn-sm btn-secondary" onclick="editProgramacion(${p.id})"><i data-lucide="edit-2" style="width: 14px; height: 14px;"></i></button>
+                                <button class="btn btn-sm btn-success" onclick="reenviarCorreoProgramacion(${p.id})" title="Enviar correo al instructor"><i data-lucide="mail" style="width: 14px; height: 14px;"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteProgramacion(${p.id})"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
                             </div>
                         </td>
                     </tr>
                 `;
             }).join('');
+            
+            // Re-inicializar iconos
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 50);
         }
 
         // NUEVO: Función para reenviar correo manualmente
@@ -3066,32 +3161,32 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                     
                     <div class="dashboard-cards">
                         <div class="dashboard-card">
-                            <div class="card-icon">📊</div>
+                            <div class="card-icon"><i data-lucide="file-text"></i></div>
                             <div class="card-value">${fichas.length}</div>
                             <div class="card-label">Total de Fichas</div>
                         </div>
                         <div class="dashboard-card">
-                            <div class="card-icon">✅</div>
+                            <div class="card-icon"><i data-lucide="check-circle"></i></div>
                             <div class="card-value">${fichasActivas.length}</div>
                             <div class="card-label">Fichas Activas</div>
                         </div>
                         <div class="dashboard-card">
-                            <div class="card-icon">⏰</div>
+                            <div class="card-icon"><i data-lucide="clock"></i></div>
                             <div class="card-value">${horasProgramadas}</div>
                             <div class="card-label">Horas Programadas</div>
                         </div>
                         <div class="dashboard-card">
-                            <div class="card-icon">🎯</div>
+                            <div class="card-icon"><i data-lucide="target"></i></div>
                             <div class="card-value">${competenciasCompletas}/${competencias.length}</div>
                             <div class="card-label">Competencias Completas</div>
                         </div>
                         <div class="dashboard-card">
-                            <div class="card-icon">🏢</div>
+                            <div class="card-icon"><i data-lucide="building-2"></i></div>
                             <div class="card-value">${ambientes.length}</div>
                             <div class="card-label">Ambientes</div>
                         </div>
                         <div class="dashboard-card">
-                            <div class="card-icon">👨‍🏫</div>
+                            <div class="card-icon"><i data-lucide="users"></i></div>
                             <div class="card-value">${instructores.length}</div>
                             <div class="card-label">Instructores</div>
                         </div>
@@ -3347,6 +3442,11 @@ Este es un mensaje automático, por favor no responda a este correo.`;
             
             setupEventListeners();
             await initEmailJS();
+            
+            // Inicializar iconos Lucide
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
             
             // NUEVO: Si hay sesión, ir al resumen
             if (currentUser) {
