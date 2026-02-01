@@ -10,7 +10,7 @@ app.use(express.json());
 // Configuración de correo
 const EMAIL_CONFIG = {
     FROM_EMAIL: 'notificaciones@coordinacioncaas.com',
-    FROM_NAME: 'Sistema de Gestión SENA'
+    FROM_NAME: 'notificaciones@coordinacioncaas.com'
 };
 
 // Inicializar SendGrid
