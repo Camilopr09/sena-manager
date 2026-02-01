@@ -461,7 +461,7 @@ function renderResumen(container) {
     
     container.innerHTML = `
         <section class="section active">
-            <h2 style="margin-bottom: 24px; color: var(--sena-blue);">´´´´´´Panel de Resumen</h2>
+            <h2 style="margin-bottom: 29px; color: var(--sena-blue);">Panel de Resumen</h2>
             <div class="dashboard-cards">
                 <div class="dashboard-card" onclick="showSection('fichas')">
                     <div class="card-icon">📋</div>
