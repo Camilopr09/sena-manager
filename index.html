@@ -439,6 +439,94 @@
             display: block;
         }
         
+        /* Notificación de programaciones duplicadas */
+        .notification-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        
+        .notification-box {
+            background: white;
+            padding: 32px;
+            border-radius: 16px;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .notification-box h3 {
+            color: var(--primary-700);
+            font-size: 24px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .notification-box p {
+            color: var(--text-dark);
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+        
+        .notification-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .notification-close:hover {
+            background: var(--bg-light);
+        }
+        
+        .notification-close svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--text-secondary);
+        }
+        
         .section-header {
             display: flex;
             justify-content: space-between;
@@ -1195,6 +1283,9 @@
         let nextProgramacionId = 1;
         let emailLog = {}; // NUEVO: Registro de correos enviados (en memoria)
         let emailReady = false; // NUEVO: estado de EmailJS
+        let programacionesDuplicadasPendientes = []; // IDs de programaciones duplicadas que necesitan modificación
+        let fichasDuplicadas = []; // IDs de fichas duplicadas para filtrar
+        let bloqueoCambioSeccion = false; // Bloquea el cambio de sección hasta completar ediciones
 
         // Constants
         const CIUDADES = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena', 'Riohacha', 'Maicao', 'Uribia', 'Manaure', 'Fonseca', 'San Juan del Cesar', 'Dibulla', 'Barrancas', 'Albania', 'Distracción', 'Hatonuevo', 'La Jagua del Pilar', 'Urumita', 'Villanueva', 'El Molino', 'Otras'];
@@ -1443,6 +1534,14 @@
         }
         
         function showSection(sectionId) {
+            // Validar si hay programaciones pendientes de modificación
+            if (bloqueoCambioSeccion && currentSection === 'programacion' && sectionId !== 'programacion') {
+                if (programacionesDuplicadasPendientes.length > 0) {
+                    alert('⚠️ Aún tienes ' + programacionesDuplicadasPendientes.length + ' programación(es) duplicada(s) pendiente(s) por modificar.\n\nDebes entrar a editar cada una y guardarla antes de poder salir de esta sección.');
+                    return; // Bloquear cambio de sección
+                }
+            }
+            
             currentSection = sectionId;
             
             document.querySelectorAll('.menu-item').forEach(item => {
@@ -1580,12 +1679,16 @@
                 return;
             }
 
-            // Crear nueva ficha con código + "+"
-            const nuevaCodigo = fichaOriginal.codigo + '+';
+            // Pedir el código nuevo para la ficha duplicada
+            const nuevoCodigo = prompt('Ingresa el código para la ficha duplicada:', fichaOriginal.codigo + '+');
+            
+            if (!nuevoCodigo) {
+                return; // Usuario canceló
+            }
             
             // Validar que el nuevo código sea único
-            if (fichas.some(f => f.codigo === nuevaCodigo)) {
-                alert('❌ El código duplicado ya existe. Intenta eliminar la copia anterior.');
+            if (fichas.some(f => f.codigo === nuevoCodigo)) {
+                alert('❌ El código ya existe. Usa un código diferente.');
                 return;
             }
 
@@ -1593,8 +1696,8 @@
                 // Crear la nueva ficha duplicada
                 const nuevaFicha = {
                     id: nextFichaId++,
-                    codigo: nuevaCodigo,
-                    codigo_programa: fichaOriginal.codigo_programa,
+                    codigo: nuevoCodigo,
+                    codigo_programa: fichaOriginal.codigo_programa + '+',
                     nombre: fichaOriginal.nombre + ' (Duplicada)',
                     ciudad: fichaOriginal.ciudad,
                     corregimiento: fichaOriginal.corregimiento,
@@ -1643,8 +1746,54 @@
                     competencias.push(...nuevasCompetencias);
                 }
 
+                // Duplicar programaciones asociadas a las competencias originales
+                const programacionesOriginales = programaciones.filter(p => {
+                    const comp = competencias.find(c => c.id === p.competencia_id);
+                    return comp && comp.ficha_id === id;
+                });
+
+                const nuevasProgramaciones = [];
+                for (const progOriginal of programacionesOriginales) {
+                    const compOriginal = competencias.find(c => c.id === progOriginal.competencia_id);
+                    const compNueva = nuevasCompetencias.find(c => c.nombre === compOriginal.nombre);
+                    
+                    if (compNueva) {
+                        const nuevaProg = {
+                            id: nextProgramacionId++,
+                            ficha_id: nuevaFicha.id,
+                            competencia_id: compNueva.id,
+                            instructor_id: progOriginal.instructor_id,
+                            ambiente_id: progOriginal.ambiente_id,
+                            horas: progOriginal.horas,
+                            fecha_inicio: progOriginal.fecha_inicio,
+                            fecha_fin: progOriginal.fecha_fin,
+                            hora_inicio: progOriginal.hora_inicio,
+                            hora_fin: progOriginal.hora_fin,
+                            estado: progOriginal.estado,
+                            pendiente_modificacion: true // Marcar como pendiente
+                        };
+                        nuevasProgramaciones.push(nuevaProg);
+                        programacionesDuplicadasPendientes.push(nuevaProg.id);
+                    }
+                }
+
+                // Guardar programaciones en BD
+                if (nuevasProgramaciones.length > 0) {
+                    if (isConnected) {
+                        const { error: progError } = await supabaseClient
+                            .from('programaciones')
+                            .insert(nuevasProgramaciones);
+                        if (progError) throw progError;
+                    }
+                    programaciones.push(...nuevasProgramaciones);
+                }
+
+                // Marcar ficha como duplicada para filtrado
+                fichasDuplicadas.push(nuevaFicha.id);
+                bloqueoCambioSeccion = nuevasProgramaciones.length > 0;
+
                 updateFichasTable();
-                alert('✅ Ficha duplicada correctamente.\n\n📌 Nota: El código de la ficha duplicada tiene un signo + al final para identificarla.\n\nNombre: ' + nuevaFicha.nombre + '\nCódigo: ' + nuevaCodigo);
+                alert('✅ Ficha duplicada correctamente.\n\n📌 Nota: La ficha, competencias y programaciones han sido duplicadas.\n\nAhora debes ir a la sección de Programación para modificar las programaciones duplicadas.\n\nNombre: ' + nuevaFicha.nombre + '\nCódigo: ' + nuevoCodigo);
             } catch (error) {
                 console.error('❌ Error al duplicar:', error);
                 alert('❌ Error al duplicar la ficha: ' + (error.message || 'Error desconocido'));
@@ -2840,8 +2989,28 @@ Este es un mensaje automático, por favor no responda a este correo.`;
 
         // PROGRAMACIÓN
         function renderProgramacion(container) {
+            // Mostrar notificación si hay programaciones duplicadas pendientes
+            const mostrarNotificacion = programacionesDuplicadasPendientes.length > 0;
+            
             container.innerHTML = `
                 <section class="section active">
+                    ${mostrarNotificacion ? `
+                    <div class="notification-overlay" id="notificationDuplicadas">
+                        <div class="notification-box">
+                            <button class="notification-close" onclick="cerrarNotificacion()">
+                                <i data-lucide="x"></i>
+                            </button>
+                            <h3>
+                                <i data-lucide="alert-circle" style="width: 28px; height: 28px; stroke: var(--primary-700);"></i>
+                                Programaciones Duplicadas
+                            </h3>
+                            <p><strong>Tienes ${programacionesDuplicadasPendientes.length} programación(es) duplicada(s) pendiente(s) de modificar.</strong></p>
+                            <p>Las puedes identificar con el signo <strong>+</strong> en el código del programa.</p>
+                            <p style="color: var(--primary-700); font-weight: 600; margin-top: 12px;">⚠️ Debes entrar a modificar cada una y guardarla antes de poder salir de esta sección.</p>
+                        </div>
+                    </div>
+                    ` : ''}
+                    
                     <div class="section-header">
                         <h2>Programación de Competencias</h2>
                         <button class="btn btn-primary" onclick="openProgramacionModal()"><i data-lucide="plus" style="width: 16px; height: 16px; margin-right: 6px;"></i> Nueva Programación</button>
@@ -2850,12 +3019,13 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                     <div class="filters">
                         <div class="filter-item">
                             <label>Buscar por Código de Ficha</label>
-                            <input type="text" id="searchProgramacionCodigo" class="search-box" placeholder="Buscar por código..." onkeyup="filterProgramaciones()">
+                            <input type="text" id="searchProgramacionCodigo" class="search-box" placeholder="Buscar por código..." onkeyup="filterProgramaciones()" ${mostrarNotificacion ? 'value="+"' : ''}>
                         </div>
                         <div class="filter-item">
                             <label>Filtrar por Ficha</label>
                             <select id="filterProgramacionFicha" class="form-control" onchange="filterProgramaciones()">
                                 <option value="">Todas las fichas</option>
+                                ${mostrarNotificacion ? '<option value="duplicadas" selected>Solo Duplicadas (+)</option>' : ''}
                                 ${fichas.map(f => `<option value="${f.id}">${f.codigo}</option>`).join('')}
                             </select>
                         </div>
@@ -2898,6 +3068,16 @@ Este es un mensaje automático, por favor no responda a este correo.`;
     updateProgramacionesTable();
         }
 
+        function cerrarNotificacion() {
+            const notification = document.getElementById('notificationDuplicadas');
+            if (notification) {
+                notification.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }
+        }
+
         function filterProgramaciones() {
             updateProgramacionesTable();
         }
@@ -2909,7 +3089,14 @@ Este es un mensaje automático, por favor no responda a este correo.`;
 
             const filtered = programaciones.filter(p => {
                 const ficha = fichas.find(f => f.id === p.ficha_id);
-                const matchFicha = !fichaId || p.ficha_id === parseInt(fichaId);
+                
+                // Filtro especial para programaciones duplicadas
+                if (fichaId === 'duplicadas') {
+                    const esDuplicada = programacionesDuplicadasPendientes.includes(p.id);
+                    if (!esDuplicada) return false;
+                }
+                
+                const matchFicha = !fichaId || fichaId === 'duplicadas' || p.ficha_id === parseInt(fichaId);
                 const matchEstado = !estado || p.estado === estado;
                 const matchCodigo = !searchCodigo || (ficha && ficha.codigo && ficha.codigo.toLowerCase().includes(searchCodigo));
                 return matchFicha && matchEstado && matchCodigo;
@@ -2919,7 +3106,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
             if (!tbody) return;
 
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" class="empty-state">No hay programaciones registradas</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No hay programaciones registradas</td></tr>';
                 return;
             }
 
@@ -2930,10 +3117,11 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                 const ambiente = ambientes.find(a => a.id === p.ambiente_id);
                 const logKey = `prog_${p.id}`;
                 const envioInfo = emailLog[logKey];
+                const esPendiente = programacionesDuplicadasPendientes.includes(p.id);
 
                 return `
-                    <tr>
-                        <td>${ficha?.codigo || ''}</td>
+                    <tr style="${esPendiente ? 'background: #fff8e1;' : ''}">
+                        <td>${ficha?.codigo || ''} ${esPendiente ? '<span style="color: var(--primary-700); font-weight: bold;">⚠️</span>' : ''}</td>
                         <td>${ficha?.nombre || 'N/A'}</td>
                         <td>${competencia?.nombre || 'N/A'}</td>
                         <td>${instructor?.nombre || 'N/A'}</td>
@@ -3139,7 +3327,21 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                         if (error) throw error;
                     }
                     const prog = programaciones.find(p => p.id === parseInt(id));
-                    if (prog) Object.assign(prog, progData);
+                    if (prog) {
+                        Object.assign(prog, progData);
+                        prog.pendiente_modificacion = false; // Marcar como modificada
+                    }
+                    
+                    // Remover de pendientes si estaba allí
+                    const index = programacionesDuplicadasPendientes.indexOf(parseInt(id));
+                    if (index > -1) {
+                        programacionesDuplicadasPendientes.splice(index, 1);
+                    }
+                    
+                    // Si ya no hay pendientes, desbloquear cambio de sección
+                    if (programacionesDuplicadasPendientes.length === 0) {
+                        bloqueoCambioSeccion = false;
+                    }
                 } else {
                     const newProg = { id: nextProgramacionId++, ...progData };
                     if (isConnected) {
