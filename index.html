@@ -1571,14 +1571,6 @@
         }
         
         function showSection(sectionId) {
-            // Validar si hay programaciones pendientes de modificación
-            if (bloqueoCambioSeccion && currentSection === 'programacion' && sectionId !== 'programacion') {
-                if (programacionesDuplicadasPendientes.length > 0) {
-                    alert('⚠️ Aún tienes ' + programacionesDuplicadasPendientes.length + ' programación(es) duplicada(s) pendiente(s) por modificar.\n\nDebes entrar a editar cada una y guardarla antes de poder salir de esta sección.');
-                    return; // Bloquear cambio de sección
-                }
-            }
-            
             currentSection = sectionId;
             
             document.querySelectorAll('.menu-item').forEach(item => {
@@ -1761,7 +1753,7 @@
                 const nuevasCompetencias = competenciasOriginal.map(comp => ({
                     id: nextCompetenciaId++,
                     ficha_id: nuevaFicha.id,
-                    nombre: comp.nombre,
+                    nombre: comp.nombre + ' (Duplicada)',
                     descripcion: comp.descripcion,
                     horas_totales: comp.horas_totales,
                     resultado_aprendizaje: comp.resultado_aprendizaje,
@@ -1782,54 +1774,18 @@
                     competencias.push(...nuevasCompetencias);
                 }
 
-                // Duplicar programaciones asociadas a las competencias originales
-                const programacionesOriginales = programaciones.filter(p => {
-                    const comp = competencias.find(c => c.id === p.competencia_id);
-                    return comp && comp.ficha_id === id;
-                });
-
-                const nuevasProgramaciones = [];
-                for (const progOriginal of programacionesOriginales) {
-                    const compOriginal = competencias.find(c => c.id === progOriginal.competencia_id);
-                    const compNueva = nuevasCompetencias.find(c => c.nombre === compOriginal.nombre);
-                    
-                    if (compNueva) {
-                        const nuevaProg = {
-                            id: nextProgramacionId++,
-                            ficha_id: nuevaFicha.id,
-                            competencia_id: compNueva.id,
-                            instructor_id: progOriginal.instructor_id,
-                            ambiente_id: progOriginal.ambiente_id,
-                            horas: progOriginal.horas,
-                            fecha_inicio: progOriginal.fecha_inicio,
-                            fecha_fin: progOriginal.fecha_fin,
-                            hora_inicio: progOriginal.hora_inicio,
-                            hora_fin: progOriginal.hora_fin,
-                            estado: progOriginal.estado,
-                            pendiente_modificacion: true // Marcar como pendiente
-                        };
-                        nuevasProgramaciones.push(nuevaProg);
-                        programacionesDuplicadasPendientes.push(nuevaProg.id);
-                    }
-                }
-
-                // Guardar programaciones en BD
-                if (nuevasProgramaciones.length > 0) {
-                    if (isConnected) {
-                        const { error: progError } = await supabaseClient
-                            .from('programaciones')
-                            .insert(nuevasProgramaciones);
-                        if (progError) throw progError;
-                    }
-                    programaciones.push(...nuevasProgramaciones);
-                }
-
-                // Marcar ficha como duplicada para filtrado
-                fichasDuplicadas.push(nuevaFicha.id);
-                bloqueoCambioSeccion = nuevasProgramaciones.length > 0;
-                
                 updateFichasTable();
-                alert('✅ Ficha duplicada correctamente.\n\n📌 Nota: La ficha, competencias y programaciones han sido duplicadas.\n\nAhora debes ir a la sección de Programación para modificar las programaciones duplicadas.\n\nNombre: ' + nuevaFicha.nombre + '\nCódigo: ' + nuevoCodigo);
+                
+                // Mostrar mensaje y redirigir a competencias
+                alert('✅ Ficha duplicada correctamente.\n\n📌 Nota: La ficha y sus competencias han sido duplicadas.\n\n' + 
+                      'Ficha: ' + nuevaFicha.nombre + '\n' +
+                      'Código: ' + nuevoCodigo + '\n' +
+                      'Competencias duplicadas: ' + nuevasCompetencias.length + '\n\n' +
+                      'Ahora debes ir a la sección de Competencias para revisar y modificar las competencias duplicadas.');
+                
+                // Redirigir automáticamente a la sección de competencias
+                showSection('competencias');
+                
             } catch (error) {
                 console.error('❌ Error al duplicar:', error);
                 alert('❌ Error al duplicar la ficha: ' + (error.message || 'Error desconocido'));
@@ -2283,7 +2239,7 @@
                         <td>
                             <div class="action-buttons">
                                 <button class="btn btn-sm btn-secondary" onclick="editFicha(${f.id})"><i data-lucide="edit-2" style="width: 14px; height: 14px;"></i></button>
-                                <button class="btn btn-sm btn-success" onclick="duplicateFicha(${f.id})" title="Duplicar ficha con competencias"><i data-lucide="copy" style="width: 14px; height: 14px;"></i></button>
+                                <button class="btn btn-sm btn-success" onclick="duplicateFicha(${f.id})" title="Duplicar ficha y competencias"><i data-lucide="copy" style="width: 14px; height: 14px;"></i></button>
                                 <button class="btn btn-sm btn-danger" onclick="deleteFicha(${f.id})"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
                             </div>
                         </td>
