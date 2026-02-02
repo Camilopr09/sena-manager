@@ -1871,11 +1871,12 @@
                     const key = `prog_${item.programacion_id}`;
                     emailLog[key] = {
                         fecha_envio: item.fecha_envio,
-                        hora_envio: item.hora_envio
+                        hora_envio: item.hora_envio,
+                        usuario_envio: item.usuario_envio || 'N/A'
                     };
                 });
                 
-                console.log('✅ Registro de correos cargado desde la base de datos');
+                console.log('✅ Registro de correos cargado desde la base de datos:', emailLog);
             } catch (error) {
                 console.error('❌ Error cargando email_log:', error);
             }
@@ -1969,11 +1970,13 @@
 
                 const fecha = new Date().toLocaleDateString('es-CO');
                 const hora = new Date().toLocaleTimeString('es-CO');
+                const usuario = currentUser ? currentUser.usuario : 'Sistema';
                 const key = `prog_${programacion.id}`;
                 
                 emailLog[key] = {
                     fecha_envio: fecha,
-                    hora_envio: hora
+                    hora_envio: hora,
+                    usuario_envio: usuario
                 };
 
                 // NUEVO: Guardar en la base de datos
@@ -1983,13 +1986,17 @@
                         .insert([{
                             programacion_id: programacion.id,
                             fecha_envio: fecha,
-                            hora_envio: hora
+                            hora_envio: hora,
+                            usuario_envio: usuario
                         }]);
                     
                     if (insertError) {
                         console.warn('⚠️ Error guardando en email_log:', insertError.message);
+                        console.error('Detalle del error:', insertError);
                         // Guardar en localStorage como respaldo
                         localStorage.setItem('sena_emailLog', JSON.stringify(emailLog));
+                    } else {
+                        console.log('✅ Registro de correo guardado en base de datos:', emailLog[key]);
                     }
                 } else {
                     // Si no está conectado, guardar en localStorage como respaldo
@@ -3225,7 +3232,7 @@
                         <td><span class="status-badge status-${p.estado.toLowerCase().replace(' ', '')}">${p.estado}</span></td>
                         <td>
                             ${envioInfo 
-                                ? `<span style="color: #27ae60; font-weight: bold; display: flex; align-items: center; gap: 4px;"><i data-lucide="check-circle" style="width: 16px; height: 16px;"></i> Enviado<br><small>${envioInfo.fecha_envio}<br>${envioInfo.hora_envio}</small></span>`
+                                ? `<span style="color: #27ae60; font-weight: bold; display: flex; align-items: center; gap: 4px;"><i data-lucide="check-circle" style="width: 16px; height: 16px;"></i> Enviado<br><small>${envioInfo.fecha_envio}<br>${envioInfo.hora_envio}<br><strong>Por: ${envioInfo.usuario_envio || 'N/A'}</strong></small></span>`
                                 : `<span style="color: #e74c3c; display: flex; align-items: center; gap: 4px;"><i data-lucide="x-circle" style="width: 16px; height: 16px;"></i> No enviado</span>`
                             }
                         </td>
@@ -3268,7 +3275,8 @@
             const enviado = await sendEmailToInstructor(instructor, ficha, competencia, programacion);
             if (enviado.success) {
                 updateProgramacionesTable();
-                alert(`✅ Correo enviado a ${instructor.correo}\n\nFecha: ${new Date().toLocaleDateString('es-CO')}\nHora: ${new Date().toLocaleTimeString('es-CO')}`);
+                const usuario = currentUser ? currentUser.usuario : 'Sistema';
+                alert(`✅ Correo enviado a ${instructor.correo}\n\nFecha: ${new Date().toLocaleDateString('es-CO')}\nHora: ${new Date().toLocaleTimeString('es-CO')}\nEnviado por: ${usuario}`);
             } else {
                 alert('❌ No se pudo enviar el correo.\n\nDetalle: ' + enviado.message + '\nVerifica SERVICE_ID, TEMPLATE_ID y PUBLIC_KEY de EmailJS.');
             }
