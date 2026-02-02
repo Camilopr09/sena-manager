@@ -1572,14 +1572,6 @@
         }
         
         function showSection(sectionId) {
-            // Validar si hay competencias pendientes de modificación
-            if (bloqueoCambioSeccion && currentSection === 'competencias' && sectionId !== 'competencias') {
-                if (competenciasDuplicadasPendientes.length > 0) {
-                    alert('⚠️ Aún tienes ' + competenciasDuplicadasPendientes.length + ' competencia(s) duplicada(s) pendiente(s) por modificar.\n\nDebes entrar a editar cada una y guardarla antes de poder salir de esta sección.');
-                    return; // Bloquear cambio de sección
-                }
-            }
-            
             currentSection = sectionId;
             
             document.querySelectorAll('.menu-item').forEach(item => {
@@ -1769,8 +1761,7 @@
                     criterios_evaluacion: comp.criterios_evaluacion,
                     conocimientos: comp.conocimientos,
                     saber_hacer: comp.saber_hacer,
-                    saber_ser: comp.saber_ser,
-                    pendiente_modificacion: true // Marcar como pendiente
+                    saber_ser: comp.saber_ser
                 }));
                 
                 // Guardar las competencias en la base de datos
@@ -1783,22 +1774,20 @@
                     }
                     competencias.push(...nuevasCompetencias);
                     
-                    // Agregar IDs a la lista de pendientes y activar bloqueo
+                    // Agregar IDs a la lista para resaltado visual temporal (solo en memoria)
                     nuevasCompetencias.forEach(comp => {
                         competenciasDuplicadasPendientes.push(comp.id);
                     });
-                    bloqueoCambioSeccion = true;
                 }
 
                 updateFichasTable();
                 
                 // Mostrar mensaje y redirigir a competencias
-                alert('✅ Ficha duplicada correctamente.\n\n📌 IMPORTANTE: La ficha y sus competencias han sido duplicadas.\n\n' + 
+                alert('✅ Ficha duplicada correctamente.\n\n📌 La ficha y sus competencias han sido duplicadas.\n\n' + 
                       'Ficha: ' + nuevaFicha.nombre + '\n' +
                       'Código: ' + nuevoCodigo + '\n' +
                       'Competencias duplicadas: ' + nuevasCompetencias.length + '\n\n' +
-                      '⚠️ DEBES modificar y guardar cada competencia duplicada antes de poder salir de la sección de Competencias.\n\n' +
-                      'Te redirigiremos automáticamente ahora...');
+                      'Las competencias duplicadas estarán resaltadas temporalmente para que las identifiques.');
                 
                 // Redirigir automáticamente a la sección de competencias
                 showSection('competencias');
@@ -2391,30 +2380,12 @@
 
         // COMPETENCIAS
         function renderCompetencias(container) {
-            // Mensaje de alerta para competencias pendientes
-            const alertaPendientes = competenciasDuplicadasPendientes.length > 0 ? `
-                <div style="background-color: #fff3cd; border: 2px solid #ff9800; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="font-size: 24px;">⚠️</div>
-                        <div style="flex: 1;">
-                            <strong style="color: #ff9800; font-size: 16px;">Atención: Tienes ${competenciasDuplicadasPendientes.length} competencia(s) duplicada(s) pendiente(s) de modificación</strong>
-                            <p style="margin: 8px 0 0 0; color: #666;">
-                                Debes editar y guardar cada competencia marcada antes de poder salir de esta sección.
-                                Las competencias pendientes están resaltadas en color amarillo.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            ` : '';
-            
             container.innerHTML = `
                 <section class="section active">
                     <div class="section-header">
                         <h2>Gestión de Competencias</h2>
                         <button class="btn btn-primary" onclick="openCompetenciaModal()"><i data-lucide="plus" style="width: 16px; height: 16px; margin-right: 6px;"></i> Nueva Competencia</button>
                     </div>
-                    
-                    ${alertaPendientes}
                     
                     <div class="filters">
                         <div class="filter-item">
@@ -2494,16 +2465,16 @@
         const statusClass = porcentaje === 100 ? 'progress-complete' : 
                            porcentaje > 0 ? 'progress-partial' : 'progress-incomplete';
         
-        // Verificar si es una competencia duplicada pendiente
-        const esPendiente = competenciasDuplicadasPendientes.includes(c.id);
-        const estiloFila = esPendiente ? 'background-color: #fff3cd; border-left: 4px solid #ff9800;' : '';
+        // Verificar si es una competencia duplicada recientemente (resaltado temporal)
+        const esRecienteDuplicada = competenciasDuplicadasPendientes.includes(c.id);
+        const estiloFila = esRecienteDuplicada ? 'background-color: #e3f2fd; border-left: 4px solid #2196f3;' : '';
         
         return `
             <tr style="${estiloFila}">
                 <td>${c.id}</td>
                 <td>
                     <strong>${c.nombre}</strong>
-                    ${esPendiente ? '<br><span style="color: #ff9800; font-size: 12px;">⚠️ Pendiente de modificación</span>' : ''}
+                    ${esRecienteDuplicada ? '<br><span style="color: #2196f3; font-size: 12px;">✨ Recién duplicada</span>' : ''}
                 </td>
                 <td>${ficha?.codigo || 'N/A'}</td>
                 <td>${c.horas_totales}h</td>
@@ -2515,7 +2486,7 @@
                 </td>
                 <td>
                     <div class="action-buttons">
-                        <button class="btn btn-sm btn-secondary" onclick="editCompetencia(${c.id})" ${esPendiente ? 'style="background-color: #ff9800; border-color: #ff9800;" title="Debes modificar esta competencia"' : ''}><i data-lucide="edit-2" style="width: 14px; height: 14px;"></i></button>
+                        <button class="btn btn-sm btn-secondary" onclick="editCompetencia(${c.id})"><i data-lucide="edit-2" style="width: 14px; height: 14px;"></i></button>
                         <button class="btn btn-sm btn-danger" onclick="deleteCompetencia(${c.id})"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
                     </div>
                 </td>
@@ -2586,19 +2557,6 @@
                     const comp = competencias.find(c => c.id === parseInt(id));
                     if (comp) {
                         Object.assign(comp, compData);
-                        // Remover marca de pendiente
-                        comp.pendiente_modificacion = false;
-                    }
-                    
-                    // Remover de la lista de pendientes
-                    const index = competenciasDuplicadasPendientes.indexOf(parseInt(id));
-                    if (index > -1) {
-                        competenciasDuplicadasPendientes.splice(index, 1);
-                    }
-                    
-                    // Desactivar bloqueo si ya no hay pendientes
-                    if (competenciasDuplicadasPendientes.length === 0) {
-                        bloqueoCambioSeccion = false;
                     }
                 } else {
                     const newComp = { id: nextCompetenciaId++, ...compData };
