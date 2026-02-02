@@ -40,14 +40,234 @@
         
         /* Modo Oscuro */
         body.dark-mode {
-            --bg-light: #1a1a1a;
-            --bg-white: #2d2d2d;
-            --text-dark: #e5e5e5;
-            --text-secondary: #a0a0a0;
-            --border-color: #404040;
-            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
-            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+            /* Fondos oscuros */
+            --bg-light: #0d1117;
+            --bg-white: #161b22;
+            --text-dark: #e6edf3;
+            --text-secondary: #8b949e;
+            --border-color: #30363d;
+            
+            /* Sombras más sutiles */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.6);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.7);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.8);
+            
+            /* Colores SENA adaptados para oscuro */
+            --primary-50: #1c2e1c;
+            --primary-100: #2a4229;
+            --primary-200: #355635;
+            --primary-300: #4d7d4c;
+            --primary-400: #5fa35e;
+            --primary-500: #6eb96d;
+            --primary-600: #7bc87a;
+            --primary-700: #8cd88b;
+            --primary-800: #a0e09f;
+            --primary-900: #b4e8b3;
+            --primary-950: #c8f0c7;
+        }
+        
+        /* Estilos específicos para modo oscuro */
+        body.dark-mode .login-box {
+            background: rgba(22, 27, 34, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid #30363d;
+        }
+        
+        body.dark-mode .login-logo h1 {
+            color: #7bc87a;
+        }
+        
+        body.dark-mode .login-logo p {
+            color: #8b949e;
+        }
+        
+        body.dark-mode .form-control {
+            background-color: #0d1117;
+            border-color: #30363d;
+            color: #e6edf3;
+        }
+        
+        body.dark-mode .form-control:focus {
+            border-color: #7bc87a;
+            box-shadow: 0 0 0 4px rgba(123, 200, 122, 0.15);
+        }
+        
+        body.dark-mode .form-control:hover {
+            border-color: #6eb96d;
+        }
+        
+        body.dark-mode .toggle-sidebar-btn {
+            background: #161b22;
+            color: #e6edf3;
+            border: 1px solid #30363d;
+        }
+        
+        body.dark-mode .dashboard-card {
+            background: #161b22;
+            border-color: #30363d;
+        }
+        
+        body.dark-mode .dashboard-card:hover {
+            border-color: #6eb96d;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+        
+        body.dark-mode .card-icon {
+            background: linear-gradient(135deg, #2a4229 0%, #355635 100%);
+        }
+        
+        body.dark-mode .card-icon svg {
+            stroke: #7bc87a;
+        }
+        
+        body.dark-mode .card-value {
+            background: linear-gradient(135deg, #7bc87a 0%, #8cd88b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        body.dark-mode .table-container {
+            background: #161b22;
+            border-color: #30363d;
+        }
+        
+        body.dark-mode .table-header {
+            background: linear-gradient(to bottom, #0d1117 0%, #161b22 100%);
+            border-bottom-color: #30363d;
+        }
+        
+        body.dark-mode thead {
+            background: linear-gradient(to bottom, #161b22 0%, #0d1117 100%);
+        }
+        
+        body.dark-mode thead th {
+            color: #e6edf3;
+            border-bottom-color: #30363d;
+        }
+        
+        body.dark-mode tbody td {
+            color: #e6edf3;
+            border-bottom-color: rgba(48, 54, 61, 0.5);
+        }
+        
+        body.dark-mode tbody tr:hover {
+            background-color: #1c2e1c;
+        }
+        
+        body.dark-mode .modal-content {
+            background: #161b22;
+            border: 1px solid #30363d;
+        }
+        
+        body.dark-mode .modal-header {
+            border-bottom-color: #30363d;
+        }
+        
+        body.dark-mode .modal-header h3 {
+            color: #e6edf3;
+        }
+        
+        body.dark-mode .modal-footer {
+            border-top-color: #30363d;
+        }
+        
+        body.dark-mode .close-modal {
+            color: #8b949e;
+        }
+        
+        body.dark-mode .close-modal:hover {
+            color: #e6edf3;
+            background: #0d1117;
+        }
+        
+        body.dark-mode .status-badge {
+            border: 1px solid #30363d;
+        }
+        
+        body.dark-mode .search-box {
+            background: #0d1117;
+            border-color: #30363d;
+            color: #e6edf3;
+        }
+        
+        body.dark-mode .search-box:focus {
+            border-color: #7bc87a;
+        }
+        
+        body.dark-mode .filters {
+            background: #161b22;
+            border-color: #30363d;
+        }
+        
+        body.dark-mode select.form-control {
+            background: #0d1117;
+            color: #e6edf3;
+            border-color: #30363d;
+        }
+        
+        body.dark-mode select.form-control option {
+            background: #161b22;
+            color: #e6edf3;
+        }
+        
+        body.dark-mode textarea.form-control {
+            background: #0d1117;
+            color: #e6edf3;
+            border-color: #30363d;
+        }
+        
+        body.dark-mode .empty-state {
+            color: #8b949e;
+        }
+        
+        body.dark-mode .connection-status {
+            background: #161b22;
+            border-color: #30363d;
+        }
+        
+        body.dark-mode .notification-box {
+            background: #161b22;
+            border: 1px solid #30363d;
+        }
+        
+        body.dark-mode .notification-box h3 {
+            color: #7bc87a;
+        }
+        
+        body.dark-mode .notification-box p {
+            color: #e6edf3;
+        }
+        
+        body.dark-mode .notification-close:hover {
+            background: #0d1117;
+        }
+        
+        body.dark-mode .error-message {
+            background: linear-gradient(135deg, #2d1a1a 0%, #3d2020 100%);
+            color: #ff6b6b;
+            border-color: #5a3030;
+        }
+        
+        body.dark-mode .btn-secondary {
+            background-color: #30363d;
+            color: #e6edf3;
+        }
+        
+        body.dark-mode .btn-secondary:hover {
+            background-color: #484f58;
+        }
+        
+        body.dark-mode .progress-bar {
+            background-color: #0d1117;
+        }
+        
+        body.dark-mode strong {
+            color: #e6edf3;
+        }
+        
+        body.dark-mode small {
+            color: #8b949e;
         }
         
         * { margin: 0; padding: 0; box-sizing: border-box; }
