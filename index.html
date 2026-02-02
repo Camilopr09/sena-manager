@@ -1470,6 +1470,10 @@
                 }
                 
                 console.log('📊 Datos cargados correctamente');
+                
+                // Cargar registro de correos enviados
+                await loadEmailLogFromDatabase();
+                
             } catch (error) {
                 console.error('❌ Error cargando datos:', error);
                 throw error;
@@ -1824,26 +1828,18 @@
         
         // ========== EMAIL FUNCTIONS ==========
         async function initEmailJS() {
-            // SendGrid ya está configurado
-            if (!SENDGRID_CONFIG.API_KEY) {
-                console.warn('⚠️ SendGrid API_KEY no configurado');
-                emailReady = false;
-                return false;
-            }
             console.log('✅ SendGrid listo para enviar correos');
             emailReady = true;
             
-            // NUEVO: Cargar emailLog desde Supabase si está conectado
-            if (isConnected) {
-                await loadEmailLogFromDatabase();
-            } else {
-                // Si no está conectado, cargar del localStorage como respaldo
+            // Si no está conectado, cargar del localStorage como respaldo
+            if (!isConnected) {
                 const savedEmailLog = localStorage.getItem('sena_emailLog');
                 if (savedEmailLog) {
                     try {
                         emailLog = JSON.parse(savedEmailLog);
+                        console.log('📧 Registro de correos cargado desde localStorage');
                     } catch (e) {
-                        console.warn('⚠️ Error al cargar registro de correos');
+                        console.warn('⚠️ Error al cargar registro de correos desde localStorage');
                         emailLog = {};
                     }
                 }
