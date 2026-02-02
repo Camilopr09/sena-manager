@@ -4159,11 +4159,14 @@
                     
                     if (session && session.user) {
                         console.log('✅ Sesión activa encontrada en Supabase Auth');
+                        console.log('� Email:', session.user.email);
                         console.log('🔑 Token expira:', new Date(session.expires_at * 1000));
                         
                         // Extraer usuario del email
                         const emailParts = session.user.email.split('@');
                         const username = emailParts[0];
+                        
+                        console.log('🔍 Buscando datos del usuario:', username);
                         
                         // Buscar datos del usuario en la tabla
                         const { data: userData, error: userError } = await supabaseClient
@@ -4188,8 +4191,13 @@
                             document.getElementById('loginScreen').style.display = 'none';
                             document.getElementById('appContainer').classList.add('active');
                             document.getElementById('currentUser').textContent = currentUser.usuario;
+                            
+                            // IMPORTANTE: Renderizar sección inicial
+                            showSection('resumen');
                         } else {
-                            console.warn('⚠️ Usuario no encontrado o inactivo');
+                            console.warn('⚠️ Usuario no encontrado o inactivo:', username);
+                            console.warn('⚠️ Error:', userError);
+                            // Cerrar sesión si el usuario no existe en la BD
                             await supabaseClient.auth.signOut();
                         }
                     } else {
@@ -4232,12 +4240,8 @@
                 lucide.createIcons();
             }
             
-            // Si hay sesión, ir al resumen
-            if (currentUser) {
-                showSection('resumen');
-            }
-            
             console.log('✅ Aplicación lista');
+            console.log('👤 Usuario actual:', currentUser ? currentUser.usuario : 'No autenticado');
         }
 
         window.addEventListener('load', initApp);
