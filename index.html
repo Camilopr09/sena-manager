@@ -3352,21 +3352,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                 }
                 closeProgramacionModal();
                 updateProgramacionesTable();
-                
-                const instructor = instructores.find(i => i.id === instructorId);
-                const competencia = competencias.find(c => c.id === competenciaId);
-                const ficha = fichas.find(f => f.id === fichaId);
-                const programacionGuardada = programaciones.find(p => p.id === (id ? parseInt(id) : nextProgramacionId - 1));
-                if (instructor && competencia && ficha && programacionGuardada) {
-                    const resultadoCorreo = await sendEmailToInstructor(instructor, ficha, competencia, programacionGuardada);
-                    if (resultadoCorreo.success) {
-                        alert('✅ Programación guardada y correo enviado al instructor');
-                    } else {
-                        alert('✅ Programación guardada (sin envío de correo).\n\nDetalle: ' + resultadoCorreo.message);
-                    }
-                } else {
-                    alert('✅ Programación guardada correctamente');
-                }
+                alert('✅ Programación guardada correctamente');
 
             } catch (error) {
                 alert('❌ Error: ' + error.message);
