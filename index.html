@@ -1567,7 +1567,6 @@
         async function initSupabase() {
             try {
                 if (!window.supabase || !window.supabase.createClient) {
-                    console.error('Librería Supabase no disponible');
                     return false;
                 }
                 
@@ -1578,7 +1577,6 @@
                 
                 return true;
             } catch (error) {
-                console.error('Error inicializando Supabase:', error.message);
                 return false;
             }
         }
@@ -1621,8 +1619,6 @@
         }
         
         async function loadDataFromSupabase() {
-            console.log('📊 Cargando datos de Supabase...');
-            
             try {
                 const tables = [
                     { name: 'usuarios', store: 'usuarios' },
@@ -1679,7 +1675,6 @@
                 await loadEmailLogFromDatabase();
                 
             } catch (error) {
-                console.error('Error cargando datos:', error);
                 throw error;
             }
         }
@@ -1776,7 +1771,6 @@
                 showSection('resumen');
                 
             } catch (error) {
-                console.error('❌ Error en login:', error);
                 const errorDiv = document.getElementById('loginError');
                 errorDiv.textContent = error.message || 'Usuario o contraseña incorrectos';
                 errorDiv.classList.remove('hidden');
@@ -4045,8 +4039,6 @@
 
         // ========== PAGE INITIALIZATION ========== 
         async function initApp() {
-            console.log('🚀 Iniciando aplicación...');
-            
             loadDarkModePreference();
             updateConnectionStatus('connecting');
             
@@ -4057,7 +4049,6 @@
             if (savedSession === 'true' && savedUser) {
                 try {
                     currentUser = JSON.parse(savedUser);
-                    console.log('✅ Sesión restaurada:', currentUser.usuario);
                     
                     document.getElementById('loginScreen').classList.remove('active');
                     document.getElementById('loginScreen').style.display = 'none';
@@ -4065,7 +4056,6 @@
                     document.getElementById('currentUser').textContent = currentUser.usuario;
                     showSection('resumen');
                 } catch (error) {
-                    console.error('Error restaurando sesión:', error);
                     localStorage.removeItem('sena_user');
                     localStorage.removeItem('sena_session');
                     currentUser = null;
@@ -4078,8 +4068,6 @@
             if (supabaseReady) {
                 connectToSupabase()
                     .then(() => {
-                        console.log('✅ Conectado a Supabase');
-                        
                         // Validar usuario si hay sesión activa
                         if (currentUser) {
                             supabaseClient
@@ -4090,7 +4078,6 @@
                                 .single()
                                 .then(({ data, error }) => {
                                     if (error || !data) {
-                                        console.warn('Usuario no válido, cerrando sesión');
                                         handleLogout();
                                     }
                                 })
@@ -4098,7 +4085,6 @@
                         }
                     })
                     .catch(() => {
-                        console.warn('Modo sin conexión');
                         updateConnectionStatus('error');
                     });
                 
@@ -4127,206 +4113,6 @@
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
-            
-            console.log('✅ Aplicación lista');
-        }
-
-        window.addEventListener('load', initApp);
-    </script>
-</body>
-</html>
-            
-            const supabaseReady = await initSupabase();
-            
-            if (supabaseReady) {
-                await connectToSupabase();
-                
-                // � VERIFICAR SESIÓN EN LOCALSTORAGE PRIMERO
-                const savedSession = localStorage.getItem('sena_session');
-                const savedUser = localStorage.getItem('sena_user');
-                
-                if (savedSession === 'true' && savedUser) {
-                    try {
-                        const userData = JSON.parse(savedUser);
-                        console.log('💾 Sesión encontrada en localStorage:', userData.usuario);
-                        
-                        // Verificar que el usuario aún existe y está activo
-                        const { data: dbUser, error: dbError } = await supabaseClient
-                            .from('usuarios')
-                            .select('*')
-                            .eq('id', userData.id)
-                            .eq('activo', true)
-                            .single();
-                        
-                        if (!dbError && dbUser) {
-                            currentUser = {
-                                id: dbUser.id,
-                                usuario: dbUser.usuario,
-                                permisos: dbUser.permisos
-                            };
-                            
-                            console.log('✅ Sesión restaurada desde localStorage');
-                            
-                            // Mostrar app
-                            document.getElementById('loginScreen').classList.remove('active');
-                            document.getElementById('loginScreen').style.display = 'none';
-                            document.getElementById('appContainer').classList.add('active');
-                            document.getElementById('currentUser').textContent = currentUser.usuario;
-                            showSection('resumen');
-                        } else {
-                            console.warn('⚠️ Usuario en localStorage no válido, limpiando...');
-                            localStorage.removeItem('sena_user');
-                            localStorage.removeItem('sena_session');
-                        }
-                    } catch (error) {
-                        console.error('❌ Error restaurando sesión localStorage:', error);
-                        localStorage.removeItem('sena_user');
-                        localStorage.removeItem('sena_session');
-                    }
-                }
-                
-                // �🔐 CONFIGURAR LISTENER DE AUTENTICACIÓN
-                supabaseClient.auth.onAuthStateChange((event, session) => {
-                    console.log('🔔 Evento de autenticación:', event);
-                    
-                    if (event === 'SIGNED_IN' && session) {
-                        console.log('✅ Usuario autenticado');
-                        console.log('🔑 Token expira:', new Date(session.expires_at * 1000));
-                    } else if (event === 'SIGNED_OUT') {
-                        console.log('🚪 Usuario cerró sesión');
-                        currentUser = null;
-                    } else if (event === 'TOKEN_REFRESHED') {
-                        console.log('🔄 Token renovado automáticamente');
-                        console.log('🔑 Nuevo token expira:', new Date(session.expires_at * 1000));
-                    } else if (event === 'USER_UPDATED') {
-                        console.log('👤 Usuario actualizado');
-                    }
-                });
-                
-            } else {
-                console.warn('⚠️ Supabase no disponible, usando solo localStorage');
-                updateConnectionStatus('error');
-                loadLocalData();
-                
-                // Verificar localStorage como único sistema
-                        console.log('� Email:', session.user.email);
-                        console.log('🔑 Token expira:', new Date(session.expires_at * 1000));
-                        
-                        // Extraer usuario del email
-                        const emailParts = session.user.email.split('@');
-                        const username = emailParts[0];
-                        
-                        console.log('🔍 Username extraído:', username);
-                        console.log('📋 Total usuarios en memoria:', USERS.length);
-                        
-                        // Buscar datos del usuario en la tabla con case-insensitive
-                        const { data: userData, error: userError } = await supabaseClient
-                            .from('usuarios')
-                            .select('*')
-                            .ilike('usuario', username)
-                            .eq('activo', true)
-                            .single();
-                        
-                        console.log('📊 Resultado búsqueda:', { found: !!userData, error: userError?.message });
-                        
-                        if (!userError && userData) {
-                            currentUser = {
-                                id: userData.id,
-                                usuario: userData.usuario,
-                                permisos: userData.permisos,
-                                authUser: session.user
-                            };
-                            
-                            console.log('✅ Sesión restaurada para:', currentUser.usuario);
-                            
-                            // Mostrar app
-                            document.getElementById('loginScreen').classList.remove('active');
-                            document.getElementById('loginScreen').style.display = 'none';
-                            document.getElementById('appContainer').classList.add('active');
-                            document.getElementById('currentUser').textContent = currentUser.usuario;
-                            
-                            // IMPORTANTE: Renderizar sección inicial
-                            showSection('resumen');
-                        } else {
-                            console.error('❌ Usuario no encontrado en BD:', username);
-                            if (userError) console.error('   Error BD:', userError.message);
-                            
-                            // Intentar buscar en array local como fallback
-                            const localUser = USERS.find(u => 
-                                u.usuario.toLowerCase() === username.toLowerCase() && u.activo === true
-                            );
-                            
-                            if (localUser) {
-                                console.log('✅ Usuario encontrado en array local');
-                                currentUser = {
-                                    id: localUser.id,
-                                    usuario: localUser.usuario,
-                                    permisos: localUser.permisos,
-                                    authUser: session.user
-                                };
-                                
-                                document.getElementById('loginScreen').classList.remove('active');
-                                document.getElementById('loginScreen').style.display = 'none';
-                                document.getElementById('appContainer').classList.add('active');
-                                document.getElementById('currentUser').textContent = currentUser.usuario;
-                                showSection('resumen');
-                            } else {
-                                console.error('❌ Usuario tampoco en array local');
-                                console.log('📋 Usuarios disponibles:', USERS.map(u => u.usuario));
-                                await supabaseClient.auth.signOut();
-                            }
-                        }
-                    } else {
-                        console.log('ℹ️ No hay sesión activa - mostrar login');
-                    }
-                } catch (error) {
-                    console.error('❌ Error verificando sesión Auth:', error);
-                    console.error('   Detalle:', error.message);
-                    console.error('   Stack:', error.stack);
-                }
-                
-            } else {
-                console.warn('⚠️ Supabase no disponible, usando solo localStorage');
-                updateConnectionStatus('error');
-                loadLocalData();
-                
-                // Verificar localStorage como único sistema
-                const savedSession = localStorage.getItem('sena_session');
-                const savedUser = localStorage.getItem('sena_user');
-                
-                if (savedSession === 'true' && savedUser) {
-                    try {
-                        currentUser = JSON.parse(savedUser);
-                        console.log('💾 Sesión restaurada desde localStorage (modo offline)');
-                        
-                        document.getElementById('loginScreen').classList.remove('active');
-                        document.getElementById('loginScreen').style.display = 'none';
-                        document.getElementById('appContainer').classList.add('active');
-                        document.getElementById('currentUser').textContent = currentUser.usuario;
-                        showSection('resumen');
-                    } catch (error) {
-                        console.error('❌ Error con sesión local:', error);
-                        localStorage.removeItem('sena_user');
-                        localStorage.removeItem('sena_session');
-                    }
-                } else {
-                    console.log('ℹ️ No hay sesión guardada - mostrar login');
-                }
-            }
-            
-            setupEventListeners();
-            await initEmailJS();
-            
-            // Cargar estado del sidebar
-            loadSidebarState();
-            
-            // Inicializar iconos Lucide
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            }
-            
-            console.log('✅ Aplicación lista');
-            console.log('👤 Usuario actual:', currentUser ? currentUser.usuario : 'No autenticado');
         }
 
         window.addEventListener('load', initApp);
