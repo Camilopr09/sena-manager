@@ -3814,27 +3814,6 @@
             // Cargar preferencia de modo oscuro
             loadDarkModePreference();
             
-            // NUEVO: Verificar si hay sesión guardada
-            const savedSession = localStorage.getItem('sena_session');
-            const savedUser = localStorage.getItem('sena_user');
-            
-            if (savedSession === 'true' && savedUser) {
-                try {
-                    currentUser = JSON.parse(savedUser);
-                    console.log('✅ Sesión recuperada:', currentUser.usuario);
-                    
-                    // Mostrar app y ocultar login
-                    document.getElementById('loginScreen').classList.remove('active');
-                    document.getElementById('loginScreen').style.display = 'none';
-                    document.getElementById('appContainer').classList.add('active');
-                    document.getElementById('currentUser').textContent = currentUser.usuario;
-                } catch (error) {
-                    console.error('❌ Error recuperando sesión:', error);
-                    localStorage.removeItem('sena_user');
-                    localStorage.removeItem('sena_session');
-                }
-            }
-            
             updateConnectionStatus('connecting');
             
             const supabaseReady = await initSupabase();
@@ -3845,6 +3824,59 @@
                 console.warn('⚠️ Supabase no disponible');
                 updateConnectionStatus('error');
                 loadLocalData();
+            }
+            
+            // Verificar sesión guardada DESPUÉS de conectar a Supabase
+            const savedSession = localStorage.getItem('sena_session');
+            const savedUser = localStorage.getItem('sena_user');
+            
+            if (savedSession === 'true' && savedUser) {
+                try {
+                    const userSession = JSON.parse(savedUser);
+                    console.log('🔍 Verificando sesión guardada:', userSession.usuario);
+                    
+                    // Verificar que el usuario aún existe y está activo en Supabase
+                    if (isConnected) {
+                        const { data, error } = await supabaseClient
+                            .from('usuarios')
+                            .select('*')
+                            .eq('usuario', userSession.usuario)
+                            .eq('activo', true)
+                            .single();
+                        
+                        if (!error && data) {
+                            // Usuario válido - restaurar sesión
+                            currentUser = {
+                                id: data.id,
+                                usuario: data.usuario,
+                                permisos: data.permisos
+                            };
+                            console.log('✅ Sesión válida restaurada:', currentUser.usuario);
+                            
+                            // Mostrar app y ocultar login
+                            document.getElementById('loginScreen').classList.remove('active');
+                            document.getElementById('loginScreen').style.display = 'none';
+                            document.getElementById('appContainer').classList.add('active');
+                            document.getElementById('currentUser').textContent = currentUser.usuario;
+                        } else {
+                            // Usuario no existe o está inactivo - limpiar sesión
+                            console.warn('⚠️ Sesión inválida (usuario eliminado o inactivo)');
+                            localStorage.removeItem('sena_user');
+                            localStorage.removeItem('sena_session');
+                        }
+                    } else {
+                        // Sin conexión - usar sesión local como respaldo
+                        currentUser = userSession;
+                        document.getElementById('loginScreen').classList.remove('active');
+                        document.getElementById('loginScreen').style.display = 'none';
+                        document.getElementById('appContainer').classList.add('active');
+                        document.getElementById('currentUser').textContent = currentUser.usuario;
+                    }
+                } catch (error) {
+                    console.error('❌ Error verificando sesión:', error);
+                    localStorage.removeItem('sena_user');
+                    localStorage.removeItem('sena_session');
+                }
             }
             
             setupEventListeners();
