@@ -1565,11 +1565,9 @@
         
         // ========== SUPABASE INITIALIZATION ==========
         async function initSupabase() {
-            console.log('🔌 Inicializando Supabase...');
-            
             try {
                 if (!window.supabase || !window.supabase.createClient) {
-                    console.error('❌ Librería Supabase no disponible');
+                    console.error('Librería Supabase no disponible');
                     return false;
                 }
                 
@@ -1578,25 +1576,20 @@
                     SUPABASE_CONFIG.ANON_KEY
                 );
                 
-                console.log('✅ Cliente Supabase inicializado');
                 return true;
             } catch (error) {
-                console.error('❌ Error inicializando:', error.message);
+                console.error('Error inicializando Supabase:', error.message);
                 return false;
             }
         }
 
         // ========== CONNECTION & DATA LOADING ==========
         async function connectToSupabase() {
-            console.log('🔌 Conectando a Supabase con reintentos...');
-            
             for (let attempt = 1; attempt <= SUPABASE_CONFIG.MAX_RETRIES; attempt++) {
                 try {
                     if (!supabaseClient) {
                         throw new Error('Cliente Supabase no inicializado');
                     }
-                    
-                    console.log(`📡 Intento ${attempt}/${SUPABASE_CONFIG.MAX_RETRIES}...`);
                     
                     const { data, error } = await supabaseClient
                         .from('fichas')
@@ -1604,34 +1597,20 @@
                         .limit(1);
                     
                     if (error) {
-                        if (error.message.includes('401')) {
-                            console.error('🔐 ERROR: Problemas de autenticación/RLS');
-                            console.error('   Solución: Ve a tu proyecto Supabase > Authentication > Policies');
-                            console.error('   Asegúrate que la tabla "fichas" permite SELECT sin autenticación');
-                            throw new Error('Políticas RLS no configuradas correctamente');
-                        }
-                        
-                        console.warn(`⚠️ Error en intento ${attempt}: ${error.message}`);
-                        
                         if (attempt < SUPABASE_CONFIG.MAX_RETRIES) {
-                            console.log(`⏳ Reintentando en ${SUPABASE_CONFIG.RETRY_DELAY}ms...`);
                             await new Promise(r => setTimeout(r, SUPABASE_CONFIG.RETRY_DELAY));
                             continue;
                         }
                         throw error;
                     }
                     
-                    console.log('✅ Conexión exitosa a Supabase');
                     updateConnectionStatus('connected');
                     isConnected = true;
                     await loadDataFromSupabase();
                     return;
                     
                 } catch (err) {
-                    console.error(`❌ Error en intento ${attempt}:`, err.message);
-                    
                     if (attempt === SUPABASE_CONFIG.MAX_RETRIES) {
-                        console.error('\n❌ No se pudo conectar - usando datos locales');
                         updateConnectionStatus('error');
                         isConnected = false;
                         loadLocalData();
@@ -1662,14 +1641,12 @@
                             .order('id', { ascending: true });
                         
                         if (error) {
-                            console.warn(`⚠️ Error cargando ${table.name}:`, error.message);
                             continue;
                         }
                         
                         switch (table.store) {
                             case 'usuarios':
                                 USERS = data || [];
-                                console.log('✅ Usuarios cargados desde Supabase:', USERS.length);
                                 break;
                             case 'fichas':
                                 fichas = data || [];
@@ -1694,17 +1671,15 @@
                         }
 
                     } catch (err) {
-                        console.error(`❌ Error en ${table.name}:`, err);
+                        // Ignorar errores de tablas individuales
                     }
                 }
-                
-                console.log('📊 Datos cargados correctamente');
                 
                 // Cargar registro de correos enviados
                 await loadEmailLogFromDatabase();
                 
             } catch (error) {
-                console.error('❌ Error cargando datos:', error);
+                console.error('Error cargando datos:', error);
                 throw error;
             }
         }
@@ -1743,22 +1718,12 @@
                 // Convertir usuario a email para Supabase Auth
                 const email = `${username}@sena-manager.local`;
                 
-                console.log('🔐 Intentando autenticar con Supabase Auth...');
-                console.log('📧 Email:', email);
-                console.log('🔑 Contraseña length:', password.length);
-                
                 const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
                     email: email,
                     password: password
                 });
                 
                 if (authError) {
-                    // Mostrar error detallado
-                    console.error('❌ Error de Supabase Auth:', {
-                        message: authError.message,
-                        status: authError.status,
-                        code: authError.code
-                    });
                     
                     // Si el error es de credenciales inválidas, mostrar mensaje específico
                     if (authError.message.includes('Invalid login credentials')) {
@@ -1773,14 +1738,9 @@
                     }
                     
                     // Si falla auth, intentar con método tradicional (retrocompatibilidad)
-                    console.warn('⚠️ Auth falló, usando método tradicional');
                     await handleTraditionalLogin(username, password);
                     return;
                 }
-                
-                // ✅ Autenticación exitosa con Supabase Auth
-                console.log('✅ Autenticación exitosa con Supabase Auth');
-                console.log('👤 Auth User:', authData.user.email);
                 
                 // Buscar datos del usuario en la tabla usuarios
                 const { data: userData, error: userError } = await supabaseClient
@@ -1791,11 +1751,8 @@
                     .single();
                 
                 if (userError || !userData) {
-                    console.error('❌ Usuario no encontrado en tabla usuarios:', userError);
                     throw new Error('Usuario no encontrado o inactivo en la base de datos');
                 }
-                
-                console.log('✅ Datos de usuario cargados:', userData.usuario);
                 
                 currentUser = {
                     id: userData.id,
@@ -1811,11 +1768,6 @@
                     permisos: userData.permisos
                 }));
                 localStorage.setItem('sena_session', 'true');
-                console.log('💾 Sesión guardada en localStorage');
-                
-                // La sesión también se guarda en cookies HTTP-only por Supabase
-                console.log('✅ Sesión creada automáticamente por Supabase Auth');
-                console.log('🔑 Token expira en:', new Date(authData.session.expires_at * 1000));
                 
                 document.getElementById('loginScreen').classList.remove('active');
                 document.getElementById('loginScreen').style.display = 'none';
@@ -1870,20 +1822,10 @@
         async function handleLogout() {
             if (confirm('¿Está seguro que desea cerrar sesión?')) {
                 try {
-                    // 🔐 CERRAR SESIÓN CON SUPABASE AUTH
-                    console.log('🚪 Cerrando sesión...');
-                    
                     const { error } = await supabaseClient.auth.signOut();
-                    
-                    if (error) {
-                        console.warn('⚠️ Error cerrando sesión Auth:', error.message);
-                    } else {
-                        console.log('✅ Sesión cerrada en Supabase Auth');
-                    }
                 } catch (error) {
-                    console.error('❌ Error en logout:', error);
+                    // Ignorar errores de logout
                 } finally {
-                    // Siempre limpiar estado local
                     currentUser = null;
                     localStorage.removeItem('sena_user');
                     localStorage.removeItem('sena_session');
@@ -2002,7 +1944,6 @@
                             .update(fichaData)
                             .eq('id', parseInt(id));
                         if (error) throw error;
-                        console.log('✅ Ficha actualizada en Supabase');
                     }
                     const ficha = fichas.find(f => f.id === parseInt(id));
                     if (ficha) {
@@ -2020,7 +1961,6 @@
                             .from('fichas')
                             .insert([newFicha]);
                         if (error) throw error;
-                        console.log('✅ Ficha insertada en Supabase');
                     }
                     fichas.push(newFicha);
                 }
@@ -2029,7 +1969,6 @@
                 updateFichasTable();
                 alert('✅ Ficha guardada correctamente');
             } catch (error) {
-                console.error('❌ Error:', error);
                 alert('❌ Error al guardar: ' + (error.message || 'Error desconocido'));
             }
         }
@@ -2148,7 +2087,6 @@
                 showSection('competencias');
                 
             } catch (error) {
-                console.error('❌ Error al duplicar:', error);
                 alert('❌ Error al duplicar la ficha: ' + (error.message || 'Error desconocido'));
             }
         }
@@ -2179,7 +2117,6 @@
         
         // ========== EMAIL FUNCTIONS ==========
         async function initEmailJS() {
-            console.log('✅ SendGrid listo para enviar correos');
             emailReady = true;
             
             // Si no está conectado, cargar del localStorage como respaldo
@@ -2188,9 +2125,7 @@
                 if (savedEmailLog) {
                     try {
                         emailLog = JSON.parse(savedEmailLog);
-                        console.log('📧 Registro de correos cargado desde localStorage');
                     } catch (e) {
-                        console.warn('⚠️ Error al cargar registro de correos desde localStorage');
                         emailLog = {};
                     }
                 }
@@ -2209,7 +2144,6 @@
                     .select('*');
                 
                 if (error) {
-                    console.warn('⚠️ Error cargando email_log:', error.message);
                     return;
                 }
                 
@@ -2222,10 +2156,8 @@
                         usuario_envio: item.usuario_envio || 'N/A'
                     };
                 });
-                
-                console.log('✅ Registro de correos cargado desde la base de datos:', emailLog);
             } catch (error) {
-                console.error('❌ Error cargando email_log:', error);
+                // Ignorar errores
             }
         }
 
@@ -2277,13 +2209,6 @@
                     anio: fechaActual.getFullYear()
                 };
 
-                console.log('📧 Datos para el correo:', {
-                    instructor: instructor.nombre,
-                    email: instructor.correo,
-                    templateId: 'd-a9349f421f8948b482dfedb0c1422453',
-                    templateData
-                });
-
                 // ✅ Usar backend proxy en Vercel con plantilla de SendGrid
                 const response = await fetch('/api/send-email', {
                     method: 'POST',
@@ -2298,22 +2223,16 @@
                     })
                 });
 
-                console.log('📥 Respuesta del servidor:', response.status, response.statusText);
-
                 if (!response.ok) {
                     const errorData = await response.json();
-                    console.error('❌ Error del servidor:', errorData);
                     throw new Error(errorData.error || `Error ${response.status}`);
                 }
 
                 const result = await response.json();
-                console.log('✅ Resultado:', result);
                 
                 if (!result.success) {
                     throw new Error(result.error || 'Error desconocido');
                 }
-
-                console.log('✅ Correo enviado exitosamente usando plantilla SendGrid');
 
                 const fecha = new Date().toLocaleDateString('es-CO');
                 const hora = new Date().toLocaleTimeString('es-CO');
@@ -2338,12 +2257,7 @@
                         }]);
                     
                     if (insertError) {
-                        console.warn('⚠️ Error guardando en email_log:', insertError.message);
-                        console.error('Detalle del error:', insertError);
-                        // Guardar en localStorage como respaldo
                         localStorage.setItem('sena_emailLog', JSON.stringify(emailLog));
-                    } else {
-                        console.log('✅ Registro de correo guardado en base de datos:', emailLog[key]);
                     }
                 } else {
                     // Si no está conectado, guardar en localStorage como respaldo
@@ -2352,7 +2266,6 @@
 
                 return { success: true };
             } catch (error) {
-                console.error('❌ Error enviando correo:', error);
                 return {
                     success: false,
                     message: `Error: ${error.message}`
@@ -2362,8 +2275,6 @@
 
         // ========== LOCAL DATA FALLBACK ==========
         function loadLocalData() {
-            console.warn('Usando datos locales (listas vacías)');
-            // Mantén los arreglos ya inicializados en memoria; solo marca el estado.
             updateConnectionStatus('error');
         }
 
@@ -4136,95 +4047,88 @@
         async function initApp() {
             console.log('🚀 Iniciando aplicación...');
             
-            // Cargar preferencia de modo oscuro
             loadDarkModePreference();
-            
             updateConnectionStatus('connecting');
             
-            // 💾 RESTAURAR SESIÓN DESDE LOCALSTORAGE INMEDIATAMENTE
+            // 💾 RESTAURAR SESIÓN DESDE LOCALSTORAGE
             const savedSession = localStorage.getItem('sena_session');
             const savedUser = localStorage.getItem('sena_user');
             
             if (savedSession === 'true' && savedUser) {
                 try {
                     currentUser = JSON.parse(savedUser);
-                    console.log('💾 Sesión restaurada desde localStorage:', currentUser.usuario);
+                    console.log('✅ Sesión restaurada:', currentUser.usuario);
                     
-                    // Mostrar app inmediatamente
                     document.getElementById('loginScreen').classList.remove('active');
                     document.getElementById('loginScreen').style.display = 'none';
                     document.getElementById('appContainer').classList.add('active');
                     document.getElementById('currentUser').textContent = currentUser.usuario;
                     showSection('resumen');
                 } catch (error) {
-                    console.error('❌ Error restaurando sesión:', error);
+                    console.error('Error restaurando sesión:', error);
                     localStorage.removeItem('sena_user');
                     localStorage.removeItem('sena_session');
                     currentUser = null;
                 }
             }
             
-            // Conectar a Supabase en segundo plano
+            // Conectar a Supabase en segundo plano (sin bloquear UI)
             const supabaseReady = await initSupabase();
             
             if (supabaseReady) {
-                connectToSupabase().then(() => {
-                    console.log('✅ Datos sincronizados con Supabase');
-                    
-                    // Verificar que el usuario sigue siendo válido (solo si hay sesión activa)
-                    if (currentUser) {
-                        supabaseClient
-                            .from('usuarios')
-                            .select('*')
-                            .eq('id', currentUser.id)
-                            .eq('activo', true)
-                            .single()
-                            .then(({ data, error }) => {
-                                if (error || !data) {
-                                    console.warn('⚠️ Usuario ya no es válido, cerrando sesión...');
-                                    handleLogout();
-                                } else {
-                                    console.log('✅ Usuario verificado en BD');
-                                }
-                            });
-                    }
-                }).catch(err => {
-                    console.error('❌ Error conectando a Supabase:', err);
-                });
+                connectToSupabase()
+                    .then(() => {
+                        console.log('✅ Conectado a Supabase');
+                        
+                        // Validar usuario si hay sesión activa
+                        if (currentUser) {
+                            supabaseClient
+                                .from('usuarios')
+                                .select('*')
+                                .eq('id', currentUser.id)
+                                .eq('activo', true)
+                                .single()
+                                .then(({ data, error }) => {
+                                    if (error || !data) {
+                                        console.warn('Usuario no válido, cerrando sesión');
+                                        handleLogout();
+                                    }
+                                })
+                                .catch(() => {}); // Ignorar errores de validación
+                        }
+                    })
+                    .catch(() => {
+                        console.warn('Modo sin conexión');
+                        updateConnectionStatus('error');
+                    });
                 
-                // 🔐 CONFIGURAR LISTENER DE AUTENTICACIÓN
-                supabaseClient.auth.onAuthStateChange((event, session) => {
-                    console.log('🔔 Evento de autenticación:', event);
-                    
-                    if (event === 'SIGNED_OUT') {
-                        console.log('🚪 Usuario cerró sesión');
-                        currentUser = null;
-                        localStorage.removeItem('sena_user');
-                        localStorage.removeItem('sena_session');
-                    } else if (event === 'TOKEN_REFRESHED') {
-                        console.log('🔄 Token renovado automáticamente');
-                    }
-                });
+                // Listener de autenticación
+                try {
+                    supabaseClient.auth.onAuthStateChange((event, session) => {
+                        if (event === 'SIGNED_OUT') {
+                            currentUser = null;
+                            localStorage.removeItem('sena_user');
+                            localStorage.removeItem('sena_session');
+                        }
+                    });
+                } catch (err) {
+                    // Ignorar errores del listener
+                }
                 
             } else {
-                console.warn('⚠️ Supabase no disponible, usando solo localStorage');
                 updateConnectionStatus('error');
                 loadLocalData();
             }
             
             setupEventListeners();
             await initEmailJS();
-            
-            // Cargar estado del sidebar
             loadSidebarState();
             
-            // Inicializar iconos Lucide
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
             
             console.log('✅ Aplicación lista');
-            console.log('👤 Usuario actual:', currentUser ? currentUser.usuario : 'No autenticado');
         }
 
         window.addEventListener('load', initApp);
