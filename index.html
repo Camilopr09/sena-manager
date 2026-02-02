@@ -1333,10 +1333,8 @@
         const ESTADOS_PROGRAMACION = ['Programada', 'En ejecución', 'Finalizada'];
         const NIVELES_FICHA = ['Técnico', 'Tecnólogo', 'Especialización', 'Auxiliar', 'Operario', 'Otro'];
 
-        const USERS = [
-            { usuario: 'AdminCamillo', contrasena: '17954064@77', permisos: 'admin' },
-            { usuario: 'HebertCoordinador', contrasena: 'Dani.Cami@2109#', permisos: 'admin' }
-        ];
+        // USUARIOS - Se cargan desde Supabase
+        let USERS = [];
 
         
         // ========== SUPABASE INITIALIZATION ==========
@@ -1422,6 +1420,7 @@
             
             try {
                 const tables = [
+                    { name: 'usuarios', store: 'usuarios' },
                     { name: 'fichas', store: 'fichas' },
                     { name: 'competencias', store: 'competencias' },
                     { name: 'ambientes', store: 'ambientes' },
@@ -1442,6 +1441,10 @@
                         }
                         
                         switch (table.store) {
+                            case 'usuarios':
+                                USERS = data || [];
+                                console.log('✅ Usuarios cargados desde Supabase:', USERS.length);
+                                break;
                             case 'fichas':
                                 fichas = data || [];
                                 nextFichaId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
@@ -1504,17 +1507,40 @@
         }
         
         // ========== LOGIN MANAGEMENT ==========
-        function handleLogin(event) {
+        async function handleLogin(event) {
             event.preventDefault();
-            const username = document.getElementById('username').value;
+            const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             
-            const user = USERS.find(u => u.usuario === username && u.contrasena === password);
+            // SIEMPRE recargar usuarios desde Supabase al hacer login para obtener datos actualizados
+            if (isConnected) {
+                try {
+                    const { data, error } = await supabaseClient
+                        .from('usuarios')
+                        .select('*')
+                        .eq('activo', true);
+                    
+                    if (!error && data) {
+                        USERS = data;
+                        console.log('✅ Usuarios recargados desde Supabase:', USERS.length);
+                    }
+                } catch (err) {
+                    console.error('❌ Error cargando usuarios:', err);
+                }
+            }
+            
+            // Buscar usuario
+            const user = USERS.find(u => u.usuario === username && u.contrasena === password && u.activo !== false);
             
             if (user) {
                 currentUser = user;
-                // NUEVO: Guardar sesión en localStorage
-                localStorage.setItem('sena_user', JSON.stringify(user));
+                // Guardar sesión en localStorage (sin contraseña por seguridad)
+                const userSession = {
+                    id: user.id,
+                    usuario: user.usuario,
+                    permisos: user.permisos
+                };
+                localStorage.setItem('sena_user', JSON.stringify(userSession));
                 localStorage.setItem('sena_session', 'true');
                 
                 document.getElementById('loginScreen').classList.remove('active');
