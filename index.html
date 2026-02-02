@@ -1732,43 +1732,59 @@
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             
-            // SIEMPRE recargar usuarios desde Supabase al hacer login para obtener datos actualizados
-            if (isConnected) {
-                try {
-                    const { data, error } = await supabaseClient
-                        .from('usuarios')
-                        .select('*')
-                        .eq('activo', true);
-                    
-                    if (!error && data) {
-                        USERS = data;
-                        console.log('✅ Usuarios recargados desde Supabase:', USERS.length);
-                    }
-                } catch (err) {
-                    console.error('❌ Error cargando usuarios:', err);
+            try {
+                // 🔐 AUTENTICACIÓN CON SUPABASE AUTH
+                // Convertir usuario a email para Supabase Auth
+                const email = `${username}@sena-manager.local`;
+                
+                console.log('🔐 Intentando autenticar:', username);
+                
+                const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (authError) {
+                    // Si falla auth, intentar con método tradicional (retrocompatibilidad)
+                    console.warn('⚠️ Auth falló, usando método tradicional:', authError.message);
+                    await handleTraditionalLogin(username, password);
+                    return;
                 }
-            }
-            
-            // Buscar usuario
-            const user = USERS.find(u => u.usuario === username && u.contrasena === password && u.activo !== false);
-            
-            if (user) {
-                currentUser = user;
-                // Guardar sesión en localStorage (sin contraseña por seguridad)
-                const userSession = {
-                    id: user.id,
-                    usuario: user.usuario,
-                    permisos: user.permisos
+                
+                // ✅ Autenticación exitosa con Supabase Auth
+                console.log('✅ Autenticación exitosa con Supabase Auth');
+                
+                // Buscar datos del usuario en la tabla usuarios
+                const { data: userData, error: userError } = await supabaseClient
+                    .from('usuarios')
+                    .select('*')
+                    .eq('usuario', username)
+                    .eq('activo', true)
+                    .single();
+                
+                if (userError || !userData) {
+                    throw new Error('Usuario no encontrado o inactivo');
+                }
+                
+                currentUser = {
+                    id: userData.id,
+                    usuario: userData.usuario,
+                    permisos: userData.permisos,
+                    authUser: authData.user // Incluir datos de autenticación
                 };
-                localStorage.setItem('sena_user', JSON.stringify(userSession));
-                localStorage.setItem('sena_session', 'true');
+                
+                // La sesión se guarda automáticamente en cookies HTTP-only por Supabase
+                console.log('✅ Sesión creada automáticamente por Supabase Auth');
+                console.log('🔑 Token expira en:', new Date(authData.session.expires_at * 1000));
                 
                 document.getElementById('loginScreen').classList.remove('active');
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('appContainer').classList.add('active');
-                document.getElementById('currentUser').textContent = user.usuario;
+                document.getElementById('currentUser').textContent = userData.usuario;
                 showSection('resumen');
-            } else {
+                
+            } catch (error) {
+                console.error('❌ Error en login:', error);
                 const errorDiv = document.getElementById('loginError');
                 errorDiv.textContent = 'Usuario o contraseña incorrectos';
                 errorDiv.classList.remove('hidden');
@@ -1777,17 +1793,66 @@
             return false;
         }
         
-        function handleLogout() {
-            if (confirm('¿Está seguro que desea cerrar sesión?')) {
-                currentUser = null;
-                // NUEVO: Limpiar localStorage al cerrar sesión
-                localStorage.removeItem('sena_user');
-                localStorage.removeItem('sena_session');
+        // Método tradicional de login (retrocompatibilidad)
+        async function handleTraditionalLogin(username, password) {
+            if (isConnected) {
+                const { data, error } = await supabaseClient
+                    .from('usuarios')
+                    .select('*')
+                    .eq('activo', true);
                 
-                document.getElementById('appContainer').classList.remove('active');
-                document.getElementById('loginScreen').style.display = 'flex';
-                document.getElementById('loginForm').reset();
-                document.getElementById('loginError').classList.add('hidden');
+                if (!error && data) {
+                    USERS = data;
+                }
+            }
+            
+            const user = USERS.find(u => u.usuario === username && u.contrasena === password && u.activo !== false);
+            
+            if (user) {
+                currentUser = user;
+                localStorage.setItem('sena_user', JSON.stringify({
+                    id: user.id,
+                    usuario: user.usuario,
+                    permisos: user.permisos
+                }));
+                localStorage.setItem('sena_session', 'true');
+                
+                document.getElementById('loginScreen').classList.remove('active');
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('appContainer').classList.add('active');
+                document.getElementById('currentUser').textContent = user.usuario;
+                showSection('resumen');
+            } else {
+                throw new Error('Credenciales inválidas');
+            }
+        }
+        
+        async function handleLogout() {
+            if (confirm('¿Está seguro que desea cerrar sesión?')) {
+                try {
+                    // 🔐 CERRAR SESIÓN CON SUPABASE AUTH
+                    console.log('🚪 Cerrando sesión...');
+                    
+                    const { error } = await supabaseClient.auth.signOut();
+                    
+                    if (error) {
+                        console.warn('⚠️ Error cerrando sesión Auth:', error.message);
+                    } else {
+                        console.log('✅ Sesión cerrada en Supabase Auth');
+                    }
+                } catch (error) {
+                    console.error('❌ Error en logout:', error);
+                } finally {
+                    // Siempre limpiar estado local
+                    currentUser = null;
+                    localStorage.removeItem('sena_user');
+                    localStorage.removeItem('sena_session');
+                    
+                    document.getElementById('appContainer').classList.remove('active');
+                    document.getElementById('loginScreen').style.display = 'flex';
+                    document.getElementById('loginForm').reset();
+                    document.getElementById('loginError').classList.add('hidden');
+                }
             }
         }
 
@@ -4040,62 +4105,94 @@
             
             if (supabaseReady) {
                 await connectToSupabase();
-            } else {
-                console.warn('⚠️ Supabase no disponible');
-                updateConnectionStatus('error');
-                loadLocalData();
-            }
-            
-            // Verificar sesión guardada DESPUÉS de conectar a Supabase
-            const savedSession = localStorage.getItem('sena_session');
-            const savedUser = localStorage.getItem('sena_user');
-            
-            if (savedSession === 'true' && savedUser) {
-                try {
-                    const userSession = JSON.parse(savedUser);
-                    console.log('🔍 Verificando sesión guardada:', userSession.usuario);
+                
+                // 🔐 CONFIGURAR LISTENER DE AUTENTICACIÓN
+                supabaseClient.auth.onAuthStateChange((event, session) => {
+                    console.log('🔔 Evento de autenticación:', event);
                     
-                    // Verificar que el usuario aún existe y está activo en Supabase
-                    if (isConnected) {
-                        const { data, error } = await supabaseClient
+                    if (event === 'SIGNED_IN' && session) {
+                        console.log('✅ Usuario autenticado');
+                        console.log('🔑 Token expira:', new Date(session.expires_at * 1000));
+                    } else if (event === 'SIGNED_OUT') {
+                        console.log('🚪 Usuario cerró sesión');
+                        currentUser = null;
+                    } else if (event === 'TOKEN_REFRESHED') {
+                        console.log('🔄 Token renovado automáticamente');
+                        console.log('🔑 Nuevo token expira:', new Date(session.expires_at * 1000));
+                    } else if (event === 'USER_UPDATED') {
+                        console.log('👤 Usuario actualizado');
+                    }
+                });
+                
+                // 🔐 VERIFICAR SESIÓN CON SUPABASE AUTH
+                try {
+                    const { data: { session }, error } = await supabaseClient.auth.getSession();
+                    
+                    if (error) {
+                        console.warn('⚠️ Error obteniendo sesión:', error.message);
+                    }
+                    
+                    if (session && session.user) {
+                        console.log('✅ Sesión activa encontrada en Supabase Auth');
+                        console.log('🔑 Token expira:', new Date(session.expires_at * 1000));
+                        
+                        // Extraer usuario del email
+                        const emailParts = session.user.email.split('@');
+                        const username = emailParts[0];
+                        
+                        // Buscar datos del usuario en la tabla
+                        const { data: userData, error: userError } = await supabaseClient
                             .from('usuarios')
                             .select('*')
-                            .eq('usuario', userSession.usuario)
+                            .eq('usuario', username)
                             .eq('activo', true)
                             .single();
                         
-                        if (!error && data) {
-                            // Usuario válido - restaurar sesión
+                        if (!userError && userData) {
                             currentUser = {
-                                id: data.id,
-                                usuario: data.usuario,
-                                permisos: data.permisos
+                                id: userData.id,
+                                usuario: userData.usuario,
+                                permisos: userData.permisos,
+                                authUser: session.user
                             };
-                            console.log('✅ Sesión válida restaurada:', currentUser.usuario);
                             
-                            // Mostrar app y ocultar login
+                            console.log('✅ Sesión restaurada para:', currentUser.usuario);
+                            
+                            // Mostrar app
                             document.getElementById('loginScreen').classList.remove('active');
                             document.getElementById('loginScreen').style.display = 'none';
                             document.getElementById('appContainer').classList.add('active');
                             document.getElementById('currentUser').textContent = currentUser.usuario;
                         } else {
-                            // Usuario no existe o está inactivo - limpiar sesión
-                            console.warn('⚠️ Sesión inválida (usuario eliminado o inactivo)');
-                            localStorage.removeItem('sena_user');
-                            localStorage.removeItem('sena_session');
+                            console.warn('⚠️ Usuario no encontrado o inactivo');
+                            await supabaseClient.auth.signOut();
                         }
                     } else {
-                        // Sin conexión - usar sesión local como respaldo
-                        currentUser = userSession;
+                        console.log('ℹ️ No hay sesión activa - mostrar login');
+                    }
+                } catch (error) {
+                    console.error('❌ Error verificando sesión Auth:', error);
+                }
+                
+            } else {
+                console.warn('⚠️ Supabase no disponible');
+                updateConnectionStatus('error');
+                loadLocalData();
+                
+                // Fallback: verificar localStorage
+                const savedSession = localStorage.getItem('sena_session');
+                const savedUser = localStorage.getItem('sena_user');
+                
+                if (savedSession === 'true' && savedUser) {
+                    try {
+                        currentUser = JSON.parse(savedUser);
                         document.getElementById('loginScreen').classList.remove('active');
                         document.getElementById('loginScreen').style.display = 'none';
                         document.getElementById('appContainer').classList.add('active');
                         document.getElementById('currentUser').textContent = currentUser.usuario;
+                    } catch (error) {
+                        console.error('❌ Error con sesión local:', error);
                     }
-                } catch (error) {
-                    console.error('❌ Error verificando sesión:', error);
-                    localStorage.removeItem('sena_user');
-                    localStorage.removeItem('sena_session');
                 }
             }
             
@@ -4110,7 +4207,7 @@
                 lucide.createIcons();
             }
             
-            // NUEVO: Si hay sesión, ir al resumen
+            // Si hay sesión, ir al resumen
             if (currentUser) {
                 showSection('resumen');
             }
