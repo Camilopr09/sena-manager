@@ -7,15 +7,52 @@ export default async function handler(req, res) {
     }
 
     try {
-        const { email, name, subject, message } = req.body;
+        const { email, name, subject, message, templateId, templateData } = req.body;
 
-        // Validar datos
-        if (!email || !subject || !message) {
-            return res.status(400).json({ error: 'Faltan datos requeridos' });
+        // Validar datos según si usa plantilla o mensaje directo
+        if (!email) {
+            return res.status(400).json({ error: 'Email es requerido' });
         }
 
+        // Si usa plantilla de SendGrid
+        if (templateId && templateData) {
+            const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    personalizations: [
+                        {
+                            to: [{ email, name }],
+                            dynamic_template_data: templateData
+                        }
+                    ],
+                    from: {
+                        email: 'notificaciones@coordinacioncaas.com',
+                        name: 'Sistema de Gestión SENA'
+                    },
+                    reply_to: {
+                        email: 'notificaciones@coordinacioncaas.com'
+                    },
+                    template_id: templateId
+                })
+            });
 
-        // Llamar a SendGrid API
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.errors?.[0]?.message || 'Error en SendGrid');
+            }
+
+            return res.status(200).json({ success: true });
+        }
+
+        // Si usa mensaje directo (modo legacy)
+        if (!subject || !message) {
+            return res.status(400).json({ error: 'Subject y message son requeridos para envío directo' });
+        }
+
         const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
             method: 'POST',
             headers: {
@@ -44,7 +81,6 @@ export default async function handler(req, res) {
                 ]
             })
         });
-
 
         if (!response.ok) {
             const errorData = await response.json();

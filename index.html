@@ -1925,30 +1925,49 @@
             }
             
             try {
-                const emailText = `Estimado ${instructor.nombre},
+                // Obtener el ambiente
+                const ambiente = ambientes.find(a => a.id === programacion.ambiente_id);
+                
+                // Fecha de envío actual
+                const fechaActual = new Date();
+                const fechaEnvio = fechaActual.toLocaleDateString('es-CO', { 
+                    day: '2-digit', 
+                    month: 'long', 
+                    year: 'numeric' 
+                });
+                
+                // Preparar los datos dinámicos para la plantilla de SendGrid
+                // Las variables deben coincidir exactamente con la plantilla HTML
+                const templateData = {
+                    // Datos del instructor
+                    nombre_instructor: instructor.nombre,
+                    
+                    // Datos de la ficha
+                    codigo_ficha: ficha.codigo,
+                    nombre_ficha: ficha.nombre,
+                    codigo_programa: ficha.codigo_programa || 'N/A',
+                    
+                    // Datos de la competencia
+                    competencia: competencia.nombre,
+                    
+                    // Datos de la programación
+                    fecha_inicio: programacion.fecha_inicio,
+                    fecha_fin: programacion.fecha_fin,
+                    hora_inicio: programacion.hora_inicio,
+                    hora_fin: programacion.hora_fin,
+                    horas: programacion.horas,
+                    estado: programacion.estado || 'Programada',
+                    
+                    // Ambiente
+                    ambiente: ambiente ? ambiente.nombre : 'No asignado',
+                    
+                    // Metadata
+                    codigo_operacion: `PROG-${programacion.id}`,
+                    fecha_envio: fechaEnvio,
+                    anio: fechaActual.getFullYear()
+                };
 
-Se le ha asignado una nueva programación:
-
-DETALLES DE LA PROGRAMACIÓN:
-═══════════════════════════════════════
-
-📋 Ficha: ${ficha.codigo} - ${ficha.nombre}
-🎯 Competencia: ${competencia.nombre}
-📅 Fecha de Inicio: ${programacion.fecha_inicio}
-⏰ Horario: ${programacion.hora_inicio} - ${programacion.hora_fin}
-⏱️ Horas: ${programacion.horas}h
-🏢 Ambiente: ${(ambientes.find(a => a.id === programacion.ambiente_id)?.nombre) || 'No asignado'}
-
-═══════════════════════════════════════
-
-Queda atentamente invitado a ejecutar esta programación.
-
-Saludos cordiales,
-Sistema de Gestión SENA
----
-Este es un mensaje automático, por favor no responda a este correo.`;
-
-                // ✅ Usar backend proxy en Vercel
+                // ✅ Usar backend proxy en Vercel con plantilla de SendGrid
                 const response = await fetch('/api/send-email', {
                     method: 'POST',
                     headers: {
@@ -1957,8 +1976,8 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                     body: JSON.stringify({
                         email: instructor.correo,
                         name: instructor.nombre,
-                        subject: `Nueva Programación: ${ficha.codigo} - ${competencia.nombre}`,
-                        message: emailText
+                        templateId: 'd-a9349f421f8948b482dfedb0c1422453',
+                        templateData: templateData
                     })
                 });
 
@@ -1973,7 +1992,7 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                     throw new Error(result.error || 'Error desconocido');
                 }
 
-                console.log('✅ Correo enviado exitosamente');
+                console.log('✅ Correo enviado exitosamente usando plantilla SendGrid');
 
                 const fecha = new Date().toLocaleDateString('es-CO');
                 const hora = new Date().toLocaleTimeString('es-CO');
