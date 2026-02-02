@@ -1967,6 +1967,13 @@
                     anio: fechaActual.getFullYear()
                 };
 
+                console.log('📧 Datos para el correo:', {
+                    instructor: instructor.nombre,
+                    email: instructor.correo,
+                    templateId: 'd-a9349f421f8948b482dfedb0c1422453',
+                    templateData
+                });
+
                 // ✅ Usar backend proxy en Vercel con plantilla de SendGrid
                 const response = await fetch('/api/send-email', {
                     method: 'POST',
@@ -1981,12 +1988,16 @@
                     })
                 });
 
+                console.log('📥 Respuesta del servidor:', response.status, response.statusText);
+
                 if (!response.ok) {
                     const errorData = await response.json();
+                    console.error('❌ Error del servidor:', errorData);
                     throw new Error(errorData.error || `Error ${response.status}`);
                 }
 
                 const result = await response.json();
+                console.log('✅ Resultado:', result);
                 
                 if (!result.success) {
                     throw new Error(result.error || 'Error desconocido');
