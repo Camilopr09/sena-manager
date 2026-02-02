@@ -4166,15 +4166,18 @@
                         const emailParts = session.user.email.split('@');
                         const username = emailParts[0];
                         
-                        console.log('🔍 Buscando datos del usuario:', username);
+                        console.log('🔍 Username extraído:', username);
+                        console.log('📋 Total usuarios en memoria:', USERS.length);
                         
-                        // Buscar datos del usuario en la tabla
+                        // Buscar datos del usuario en la tabla con case-insensitive
                         const { data: userData, error: userError } = await supabaseClient
                             .from('usuarios')
                             .select('*')
-                            .eq('usuario', username)
+                            .ilike('usuario', username)
                             .eq('activo', true)
                             .single();
+                        
+                        console.log('📊 Resultado búsqueda:', { found: !!userData, error: userError?.message });
                         
                         if (!userError && userData) {
                             currentUser = {
@@ -4195,16 +4198,41 @@
                             // IMPORTANTE: Renderizar sección inicial
                             showSection('resumen');
                         } else {
-                            console.warn('⚠️ Usuario no encontrado o inactivo:', username);
-                            console.warn('⚠️ Error:', userError);
-                            // Cerrar sesión si el usuario no existe en la BD
-                            await supabaseClient.auth.signOut();
+                            console.error('❌ Usuario no encontrado en BD:', username);
+                            if (userError) console.error('   Error BD:', userError.message);
+                            
+                            // Intentar buscar en array local como fallback
+                            const localUser = USERS.find(u => 
+                                u.usuario.toLowerCase() === username.toLowerCase() && u.activo === true
+                            );
+                            
+                            if (localUser) {
+                                console.log('✅ Usuario encontrado en array local');
+                                currentUser = {
+                                    id: localUser.id,
+                                    usuario: localUser.usuario,
+                                    permisos: localUser.permisos,
+                                    authUser: session.user
+                                };
+                                
+                                document.getElementById('loginScreen').classList.remove('active');
+                                document.getElementById('loginScreen').style.display = 'none';
+                                document.getElementById('appContainer').classList.add('active');
+                                document.getElementById('currentUser').textContent = currentUser.usuario;
+                                showSection('resumen');
+                            } else {
+                                console.error('❌ Usuario tampoco en array local');
+                                console.log('📋 Usuarios disponibles:', USERS.map(u => u.usuario));
+                                await supabaseClient.auth.signOut();
+                            }
                         }
                     } else {
                         console.log('ℹ️ No hay sesión activa - mostrar login');
                     }
                 } catch (error) {
                     console.error('❌ Error verificando sesión Auth:', error);
+                    console.error('   Detalle:', error.message);
+                    console.error('   Stack:', error.stack);
                 }
                 
             } else {
