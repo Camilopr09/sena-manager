@@ -1737,7 +1737,9 @@
                 // Convertir usuario a email para Supabase Auth
                 const email = `${username}@sena-manager.local`;
                 
-                console.log('🔐 Intentando autenticar:', username);
+                console.log('🔐 Intentando autenticar con Supabase Auth...');
+                console.log('📧 Email:', email);
+                console.log('🔑 Contraseña length:', password.length);
                 
                 const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
                     email: email,
@@ -1745,14 +1747,34 @@
                 });
                 
                 if (authError) {
+                    // Mostrar error detallado
+                    console.error('❌ Error de Supabase Auth:', {
+                        message: authError.message,
+                        status: authError.status,
+                        code: authError.code
+                    });
+                    
+                    // Si el error es de credenciales inválidas, mostrar mensaje específico
+                    if (authError.message.includes('Invalid login credentials')) {
+                        const errorDiv = document.getElementById('loginError');
+                        errorDiv.innerHTML = `
+                            <strong>⚠️ Error de autenticación:</strong><br>
+                            La contraseña no coincide con Supabase Auth.<br>
+                            <small>Resetea la contraseña del usuario "${username}" en Auth → Users</small>
+                        `;
+                        errorDiv.classList.remove('hidden');
+                        return;
+                    }
+                    
                     // Si falla auth, intentar con método tradicional (retrocompatibilidad)
-                    console.warn('⚠️ Auth falló, usando método tradicional:', authError.message);
+                    console.warn('⚠️ Auth falló, usando método tradicional');
                     await handleTraditionalLogin(username, password);
                     return;
                 }
                 
                 // ✅ Autenticación exitosa con Supabase Auth
                 console.log('✅ Autenticación exitosa con Supabase Auth');
+                console.log('👤 Auth User:', authData.user.email);
                 
                 // Buscar datos del usuario en la tabla usuarios
                 const { data: userData, error: userError } = await supabaseClient
@@ -1763,8 +1785,11 @@
                     .single();
                 
                 if (userError || !userData) {
-                    throw new Error('Usuario no encontrado o inactivo');
+                    console.error('❌ Usuario no encontrado en tabla usuarios:', userError);
+                    throw new Error('Usuario no encontrado o inactivo en la base de datos');
                 }
+                
+                console.log('✅ Datos de usuario cargados:', userData.usuario);
                 
                 currentUser = {
                     id: userData.id,
@@ -1786,7 +1811,7 @@
             } catch (error) {
                 console.error('❌ Error en login:', error);
                 const errorDiv = document.getElementById('loginError');
-                errorDiv.textContent = 'Usuario o contraseña incorrectos';
+                errorDiv.textContent = error.message || 'Usuario o contraseña incorrectos';
                 errorDiv.classList.remove('hidden');
             }
             
