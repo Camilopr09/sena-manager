@@ -38,6 +38,18 @@
             --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.16);
         }
         
+        /* Modo Oscuro */
+        body.dark-mode {
+            --bg-light: #1a1a1a;
+            --bg-white: #2d2d2d;
+            --text-dark: #e5e5e5;
+            --text-secondary: #a0a0a0;
+            --border-color: #404040;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
@@ -327,6 +339,48 @@
             font-weight: 400;
         }
         
+        /* Botón Dark Mode */
+        .dark-mode-toggle {
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: white;
+        }
+        
+        .dark-mode-toggle:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: scale(1.05);
+        }
+        
+        .dark-mode-toggle:active {
+            transform: scale(0.95);
+        }
+        
+        .dark-mode-toggle svg {
+            width: 24px;
+            height: 24px;
+            stroke: white;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .dark-mode-toggle.rotating svg {
+            animation: rotateIcon 0.5s ease;
+        }
+        
+        @keyframes rotateIcon {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(0.8); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+        
         .sidebar-menu {
             margin-top: 20px;
         }
@@ -400,15 +454,10 @@
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            opacity: 0;
         }
         
         .sidebar.collapsed ~ .toggle-sidebar-btn {
             left: 20px;
-        }
-        
-        .app-container.active .toggle-sidebar-btn {
-            opacity: 1;
         }
         
         .toggle-sidebar-btn:hover {
@@ -423,20 +472,11 @@
         .toggle-sidebar-btn svg {
             width: 24px;
             height: 24px;
-            stroke: var(--primary-700);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         .sidebar.collapsed ~ .toggle-sidebar-btn svg {
             transform: rotate(180deg);
-        }
-        
-        .section {
-            display: none;
-        }
-        
-        .section.active {
-            display: block;
         }
         
         /* Notificación de programaciones duplicadas */
@@ -743,13 +783,8 @@
             animation: fadeIn 0.3s ease;
         }
         
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
         @keyframes slideUp {
-            from { 
+            from {
                 opacity: 0;
                 transform: translateY(30px) scale(0.95);
             }
@@ -1198,7 +1233,7 @@
             </form>
         </div>
     </div>
-    
+        
     <!-- Main App -->
     <div id="appContainer" class="app-container">
         <!-- Sidebar -->
@@ -1207,6 +1242,9 @@
                 <h2>SENA</h2>
                 <div class="user-name">Bienvenido: <span id="currentUser">Admin</span></div>
                 <div id="connectionStatus" class="connection-status connecting" style="margin-top: 8px;">⏳ Conectando...</div>
+                <button class="dark-mode-toggle" onclick="toggleDarkMode()" title="Cambiar tema">
+                    <i data-lucide="sun" id="themeIcon"></i>
+                </button>
             </div>
             <div class="sidebar-menu">
                 <div class="menu-item active" data-section="resumen">
@@ -1256,20 +1294,20 @@
             MAX_RETRIES: 3,
             RETRY_DELAY: 2000
         };
-
+        
         // ========== SENDGRID CONFIGURATION ==========
         const SENDGRID_CONFIG = {
             FROM_EMAIL: 'notificaciones@coordinacioncaas.com',
             FROM_NAME: 'Sistema de Gestión SENA'
             // API_KEY se obtiene del backend (Vercel Environment Variables)
         };
-
+        
         // ========== GLOBAL VARIABLES ==========
         let supabaseClient = null;
         let isConnected = false;
         let currentUser = null;
         let currentSection = 'resumen';
-
+        
         // Data stores
         let fichas = [];
         let competencias = [];
@@ -1299,6 +1337,7 @@
             { usuario: 'HebertCoordinador', contrasena: 'Dani.Cami@2109#', permisos: 'admin' }
         ];
 
+        
         // ========== SUPABASE INITIALIZATION ==========
         async function initSupabase() {
             console.log('🔌 Inicializando Supabase...');
@@ -1360,7 +1399,6 @@
                     console.log('✅ Conexión exitosa a Supabase');
                     updateConnectionStatus('connected');
                     isConnected = true;
-                    
                     await loadDataFromSupabase();
                     return;
                     
@@ -1377,7 +1415,7 @@
                 }
             }
         }
-
+        
         async function loadDataFromSupabase() {
             console.log('📊 Cargando datos de Supabase...');
             
@@ -1403,27 +1441,27 @@
                         }
                         
                         switch (table.store) {
-  case 'fichas':
-    fichas = data || [];
-    nextFichaId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
-    break;
-  case 'competencias':
-    competencias = data || [];
-    nextCompetenciaId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
-    break;
-  case 'ambientes':
-    ambientes = data || [];
-    nextAmbienteId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
-    break;
-  case 'instructores':
-    instructores = data || [];
-    nextInstructorId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
-    break;
-  case 'programaciones':
-    programaciones = data || [];
-    nextProgramacionId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
-    break;
-}
+                            case 'fichas':
+                                fichas = data || [];
+                                nextFichaId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
+                                break;
+                            case 'competencias':
+                                competencias = data || [];
+                                nextCompetenciaId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
+                                break;
+                            case 'ambientes':
+                                ambientes = data || [];
+                                nextAmbienteId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
+                                break;
+                            case 'instructores':
+                                instructores = data || [];
+                                nextInstructorId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
+                                break;
+                            case 'programaciones':
+                                programaciones = data || [];
+                                nextProgramacionId = (data?.length ? Math.max(...data.map(d => d.id || 0)) : 0) + 1;
+                                break;
+                        }
 
                     } catch (err) {
                         console.error(`❌ Error en ${table.name}:`, err);
@@ -1436,7 +1474,6 @@
                 throw error;
             }
         }
-
         function updateConnectionStatus(status) {
             const statusEl = document.getElementById('connectionStatus');
             if (!statusEl) return;
@@ -1460,7 +1497,7 @@
                 });
             });
         }
-
+        
         // ========== LOGIN MANAGEMENT ==========
         function handleLogin(event) {
             event.preventDefault();
@@ -1488,7 +1525,7 @@
             
             return false;
         }
-
+        
         function handleLogout() {
             if (confirm('¿Está seguro que desea cerrar sesión?')) {
                 currentUser = null;
@@ -1568,87 +1605,87 @@
                 }
             }, 50);
         }
-
+        
         // ========== CRUD FUNCTIONS FOR FICHAS ==========
         async function saveFicha(event) {
-    event.preventDefault();
+            event.preventDefault();
 
-    const id = document.getElementById('fichaId').value;
-    const codigo = document.getElementById('fichaCodigo').value.trim();
-    const codigoPrograma = document.getElementById('fichaCodigoPrograma').value.trim();
-    const nombre = document.getElementById('fichaNombre').value.trim();
-    const ciudad = document.getElementById('fichaCiudad').value;
-    const corregimiento = document.getElementById('fichaCorregimiento').value.trim() || 'Principal';
-    const horas = parseInt(document.getElementById('fichaHoras').value);
-    const estado = document.getElementById('fichaEstado').value;
-    const nivel = document.getElementById('fichaNivel').value;
-    const version = document.getElementById('fichaVersion').value.trim();
-    const fechaInicio = document.getElementById('fichaFechaInicio').value;
-    const fechaFin = document.getElementById('fichaFechaFin').value;
-    const instructorResponsableId = parseInt(document.getElementById('fichaInstructorResponsable').value) || null;
-
-    // Validar que el código sea único si es nuevo
-    if (!id && fichas.some(f => f.codigo === codigo)) {
-        alert('❌ El código ya existe. Usa uno diferente.');
-        return;
-    }
-
-    const fichaData = {
-        codigo,
-        codigo_programa: codigoPrograma,
-        nombre,
-        ciudad,
-        corregimiento,
-        fecha_inicio: fechaInicio,
-        fecha_fin: fechaFin,
-        horas_totales: horas,
-        estado,
-        nivel,
-        version,
-        instructor_responsable_id: instructorResponsableId
-    };
-
-    try {
-        if (id) {
-            // UPDATE
-            if (isConnected) {
-                const { error } = await supabaseClient
-                    .from('fichas')
-                    .update(fichaData)
-                    .eq('id', parseInt(id));
-                if (error) throw error;
-                console.log('✅ Ficha actualizada en Supabase');
-            }
-            const ficha = fichas.find(f => f.id === parseInt(id));
-            if (ficha) {
-                Object.assign(ficha, fichaData);
-            }
-        } else {
-            // INSERT
-            const newFicha = {
-                id: nextFichaId++,
-                ...fichaData
-            };
+            const id = document.getElementById('fichaId').value;
+            const codigo = document.getElementById('fichaCodigo').value.trim();
+            const codigoPrograma = document.getElementById('fichaCodigoPrograma').value.trim();
+            const nombre = document.getElementById('fichaNombre').value.trim();
+            const ciudad = document.getElementById('fichaCiudad').value;
+            const corregimiento = document.getElementById('fichaCorregimiento').value.trim() || 'Principal';
+            const horas = parseInt(document.getElementById('fichaHoras').value);
+            const estado = document.getElementById('fichaEstado').value;
+            const nivel = document.getElementById('fichaNivel').value;
+            const version = document.getElementById('fichaVersion').value.trim();
+            const fechaInicio = document.getElementById('fichaFechaInicio').value;
+            const fechaFin = document.getElementById('fichaFechaFin').value;
+            const instructorResponsableId = parseInt(document.getElementById('fichaInstructorResponsable').value) || null;
             
-            if (isConnected) {
-                const { error } = await supabaseClient
-                    .from('fichas')
-                    .insert([newFicha]);
-                if (error) throw error;
-                console.log('✅ Ficha insertada en Supabase');
+            // Validar que el código sea único si es nuevo
+            if (!id && fichas.some(f => f.codigo === codigo)) {
+                alert('❌ El código ya existe. Usa uno diferente.');
+                return;
             }
-            fichas.push(newFicha);
+
+            const fichaData = {
+                codigo,
+                codigo_programa: codigoPrograma,
+                nombre,
+                ciudad,
+                corregimiento,
+                fecha_inicio: fechaInicio,
+                fecha_fin: fechaFin,
+                horas_totales: horas,
+                estado,
+                nivel,
+                version,
+                instructor_responsable_id: instructorResponsableId
+            };
+
+            try {
+                if (id) {
+                    // UPDATE
+                    if (isConnected) {
+                        const { error } = await supabaseClient
+                            .from('fichas')
+                            .update(fichaData)
+                            .eq('id', parseInt(id));
+                        if (error) throw error;
+                        console.log('✅ Ficha actualizada en Supabase');
+                    }
+                    const ficha = fichas.find(f => f.id === parseInt(id));
+                    if (ficha) {
+                        Object.assign(ficha, fichaData);
+                    }
+                } else {
+                    // INSERT
+                    const newFicha = {
+                        id: nextFichaId++,
+                        ...fichaData
+                    };
+                    
+                    if (isConnected) {
+                        const { error } = await supabaseClient
+                            .from('fichas')
+                            .insert([newFicha]);
+                        if (error) throw error;
+                        console.log('✅ Ficha insertada en Supabase');
+                    }
+                    fichas.push(newFicha);
+                }
+                
+                closeFichaModal();
+                updateFichasTable();
+                alert('✅ Ficha guardada correctamente');
+            } catch (error) {
+                console.error('❌ Error:', error);
+                alert('❌ Error al guardar: ' + (error.message || 'Error desconocido'));
+            }
         }
         
-        closeFichaModal();
-        updateFichasTable();
-        alert('✅ Ficha guardada correctamente');
-    } catch (error) {
-        console.error('❌ Error:', error);
-        alert('❌ Error al guardar: ' + (error.message || 'Error desconocido'));
-    }
-}
-
         async function deleteFicha(id) {
             if (!confirm('¿Eliminar esta ficha?')) return;
             
@@ -1663,14 +1700,13 @@
                 programaciones = programaciones.filter(p => p.ficha_id !== id);
                 competencias = competencias.filter(c => c.ficha_id !== id);
                 fichas = fichas.filter(f => f.id !== id);
-                
                 updateFichasTable();
                 alert('✅ Ficha eliminada');
             } catch (error) {
                 alert('❌ Error: ' + error.message);
             }
         }
-
+        
         // ========== DUPLICATE FICHA WITH COMPETENCIES ==========
         async function duplicateFicha(id) {
             const fichaOriginal = fichas.find(f => f.id === id);
@@ -1678,7 +1714,7 @@
                 alert('❌ No se encontró la ficha');
                 return;
             }
-
+            
             // Pedir el código nuevo para la ficha duplicada
             const nuevoCodigo = prompt('Ingresa el código para la ficha duplicada:', fichaOriginal.codigo + '+');
             
@@ -1734,7 +1770,7 @@
                     saber_hacer: comp.saber_hacer,
                     saber_ser: comp.saber_ser
                 }));
-
+                
                 // Guardar las competencias en la base de datos
                 if (nuevasCompetencias.length > 0) {
                     if (isConnected) {
@@ -1791,7 +1827,7 @@
                 // Marcar ficha como duplicada para filtrado
                 fichasDuplicadas.push(nuevaFicha.id);
                 bloqueoCambioSeccion = nuevasProgramaciones.length > 0;
-
+                
                 updateFichasTable();
                 alert('✅ Ficha duplicada correctamente.\n\n📌 Nota: La ficha, competencias y programaciones han sido duplicadas.\n\nAhora debes ir a la sección de Programación para modificar las programaciones duplicadas.\n\nNombre: ' + nuevaFicha.nombre + '\nCódigo: ' + nuevoCodigo);
             } catch (error) {
@@ -1799,14 +1835,14 @@
                 alert('❌ Error al duplicar la ficha: ' + (error.message || 'Error desconocido'));
             }
         }
-
+        
         // ========== HELPER FUNCTIONS ==========
         function calcularHorasProgramadas(competenciaId) {
             return programaciones
                 .filter(p => p.competencia_id === competenciaId)
                 .reduce((sum, p) => sum + p.horas, 0);
         }
-
+        
         function calcularHorasDisponiblesInstructor(instructorId) {
             const instructor = instructores.find(i => i.id === instructorId);
             if (!instructor) return 0;
@@ -1815,15 +1851,15 @@
                 .reduce((sum, p) => sum + p.horas, 0);
             return instructor.horas_contratadas - programadas;
         }
-
+        
         function validateEmail(email) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
-
+        
         function validatePhone(phone) {
             return /^\d{10}$/.test(phone);
         }
-
+        
         // ========== EMAIL FUNCTIONS ==========
         async function initEmailJS() {
             // SendGrid ya está configurado
@@ -1887,7 +1923,7 @@
             if (!instructor || !instructor.correo) {
                 return { success: false, message: 'Instructor sin correo válido' };
             }
-
+            
             try {
                 const emailText = `Estimado ${instructor.nombre},
 
@@ -1909,7 +1945,6 @@ Queda atentamente invitado a ejecutar esta programación.
 
 Saludos cordiales,
 Sistema de Gestión SENA
-
 ---
 Este es un mensaje automático, por favor no responda a este correo.`;
 
@@ -1984,6 +2019,65 @@ Este es un mensaje automático, por favor no responda a este correo.`;
             console.warn('Usando datos locales (listas vacías)');
             // Mantén los arreglos ya inicializados en memoria; solo marca el estado.
             updateConnectionStatus('error');
+        }
+
+        // ========== DARK MODE ==========
+        function toggleDarkMode() {
+            const body = document.body;
+            const themeIcon = document.getElementById('themeIcon');
+            const darkModeBtn = document.querySelector('.dark-mode-toggle');
+            
+            // Agregar clase de rotación al botón
+            darkModeBtn.classList.add('rotating');
+            
+            // Toggle del modo oscuro
+            body.classList.toggle('dark-mode');
+            
+            // Obtener el estado actual
+            const isDarkMode = body.classList.contains('dark-mode');
+            
+            // Cambiar el icono
+            if (isDarkMode) {
+                themeIcon.setAttribute('data-lucide', 'moon');
+            } else {
+                themeIcon.setAttribute('data-lucide', 'sun');
+            }
+            
+            // Guardar preferencia en localStorage
+            localStorage.setItem('darkMode', isDarkMode ? 'true' : 'false');
+            
+            // Re-inicializar iconos de Lucide
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+                // Remover clase de rotación
+                darkModeBtn.classList.remove('rotating');
+            }, 250);
+        }
+        
+        // Cargar preferencia de modo oscuro al iniciar
+        function loadDarkModePreference() {
+            const darkModePref = localStorage.getItem('darkMode');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (darkModePref === 'true') {
+                document.body.classList.add('dark-mode');
+                if (themeIcon) {
+                    themeIcon.setAttribute('data-lucide', 'moon');
+                }
+            } else {
+                if (themeIcon) {
+                    themeIcon.setAttribute('data-lucide', 'sun');
+                }
+            }
+            
+            // Inicializar iconos
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 100);
         }
 
         // ========== RENDER FUNCTIONS ==========
@@ -2070,7 +2164,8 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                 </section>
             `;
         }
-
+        
+        
         // FICHAS
         function renderFichas(container) {
             container.innerHTML = `
@@ -2086,7 +2181,6 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                             <button class="btn btn-primary" onclick="openFichaModal()"><i data-lucide="plus" style="width: 16px; height: 16px; margin-right: 6px;"></i> Nueva Ficha</button>
                         </div>
                     </div>
-                    
                     <div class="table-container">
                         <div class="table-responsive">
                             <table>
@@ -2112,10 +2206,8 @@ Este es un mensaje automático, por favor no responda a este correo.`;
                         </div>
                     </div>
                 </section>
-                
                 ${getFichaModal()}
             `;
-            
             updateFichasTable();
         }
 
@@ -2124,58 +2216,58 @@ Este es un mensaje automático, por favor no responda a este correo.`;
         }
 
         function updateFichasTable() {
-    const search = document.getElementById('searchFichas')?.value.toLowerCase() || '';
-    const estado = document.getElementById('filterEstadoFicha')?.value || '';
-    
-    const filtered = fichas.filter(f => {
-        const matchSearch = f.nombre.toLowerCase().includes(search) || 
-                          f.ciudad.toLowerCase().includes(search) ||
-                          f.codigo.toLowerCase().includes(search);
-        const matchEstado = !estado || f.estado === estado;
-        return matchSearch && matchEstado;
-    });
-    
-    const tbody = document.getElementById('fichasTableBody');
-    if (!tbody) return;
-    
-    if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" class="empty-state">No se encontraron fichas</td></tr>';
-        return;
-    }
-    
-    tbody.innerHTML = filtered.map(f => {
-        const instructor = instructores.find(i => i.id === f.instructor_responsable_id);
-        return `
-            <tr>
-                <td><strong style="color: var(--sena-blue);">${f.codigo}</strong></td>
-                <td><strong style="color: var(--sena-orange);">${f.codigo_programa || ''}</strong></td>
-                <td>${f.id}</td>
-                <td><strong>${f.nombre}</strong></td>
-                <td>${f.ciudad}${f.corregimiento && f.corregimiento !== 'Principal' ? ` - ${f.corregimiento}` : ''}</td>
-                <td>${f.fecha_inicio}</td>
-                <td>${f.horas_totales}h</td>
-                <td>${f.nivel || ''}</td>
-                <td>${f.version || ''}</td>
-                <td>${instructor ? instructor.nombre : ''}</td>
-                <td><span class="status-badge status-${f.estado.toLowerCase()}">${f.estado}</span></td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn btn-sm btn-secondary" onclick="editFicha(${f.id})"><i data-lucide="edit-2" style="width: 14px; height: 14px;"></i></button>
-                        <button class="btn btn-sm btn-success" onclick="duplicateFicha(${f.id})" title="Duplicar ficha con competencias"><i data-lucide="copy" style="width: 14px; height: 14px;"></i></button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteFicha(${f.id})"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
-                    </div>
-                </td>
-            </tr>
-        `;
-    }).join('');
-    
-    // Re-inicializar iconos
-    setTimeout(() => {
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
+            const search = document.getElementById('searchFichas')?.value.toLowerCase() || '';
+            const estado = document.getElementById('filterEstadoFicha')?.value || '';
+            
+            const filtered = fichas.filter(f => {
+                const matchSearch = f.nombre.toLowerCase().includes(search) || 
+                              f.ciudad.toLowerCase().includes(search) ||
+                              f.codigo.toLowerCase().includes(search);
+                const matchEstado = !estado || f.estado === estado;
+                return matchSearch && matchEstado;
+            });
+            
+            const tbody = document.getElementById('fichasTableBody');
+            if (!tbody) return;
+            
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="12" class="empty-state">No se encontraron fichas</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = filtered.map(f => {
+                const instructor = instructores.find(i => i.id === f.instructor_responsable_id);
+                return `
+                    <tr>
+                        <td><strong style="color: var(--sena-blue);">${f.codigo}</strong></td>
+                        <td><strong style="color: var(--sena-orange);">${f.codigo_programa || ''}</strong></td>
+                        <td>${f.id}</td>
+                        <td><strong>${f.nombre}</strong></td>
+                        <td>${f.ciudad}${f.corregimiento && f.corregimiento !== 'Principal' ? ` - ${f.corregimiento}` : ''}</td>
+                        <td>${f.fecha_inicio}</td>
+                        <td>${f.horas_totales}h</td>
+                        <td>${f.nivel || ''}</td>
+                        <td>${f.version || ''}</td>
+                        <td>${instructor ? instructor.nombre : ''}</td>
+                        <td><span class="status-badge status-${f.estado.toLowerCase()}">${f.estado}</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-sm btn-secondary" onclick="editFicha(${f.id})"><i data-lucide="edit-2" style="width: 14px; height: 14px;"></i></button>
+                                <button class="btn btn-sm btn-success" onclick="duplicateFicha(${f.id})" title="Duplicar ficha con competencias"><i data-lucide="copy" style="width: 14px; height: 14px;"></i></button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteFicha(${f.id})"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Re-inicializar iconos
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }, 50);
         }
-    }, 50);
-}
 
         function getFichaModal() {
             return `
@@ -3687,6 +3779,9 @@ Este es un mensaje automático, por favor no responda a este correo.`;
         // ========== PAGE INITIALIZATION ========== 
         async function initApp() {
             console.log('🚀 Iniciando aplicación...');
+            
+            // Cargar preferencia de modo oscuro
+            loadDarkModePreference();
             
             // NUEVO: Verificar si hay sesión guardada
             const savedSession = localStorage.getItem('sena_session');
