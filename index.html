@@ -3534,6 +3534,42 @@
             }
         }
 
+        // Función para convertir de 12 horas a 24 horas
+        function convertirA24Horas(hora, minuto, periodo) {
+            if (!hora || !minuto || !periodo) return '';
+            
+            let hora24 = parseInt(hora);
+            
+            if (periodo === 'AM') {
+                if (hora24 === 12) hora24 = 0;
+            } else { // PM
+                if (hora24 !== 12) hora24 += 12;
+            }
+            
+            return `${hora24.toString().padStart(2, '0')}:${minuto}`;
+        }
+        
+        // Función para convertir de 24 horas a 12 horas
+        function convertirA12Horas(hora24) {
+            if (!hora24) return ['', '', ''];
+            
+            const [horaStr, minutoStr] = hora24.split(':');
+            let hora = parseInt(horaStr);
+            const minuto = minutoStr;
+            let periodo = 'AM';
+            
+            if (hora === 0) {
+                hora = 12;
+            } else if (hora === 12) {
+                periodo = 'PM';
+            } else if (hora > 12) {
+                hora -= 12;
+                periodo = 'PM';
+            }
+            
+            return [hora.toString(), minuto, periodo];
+        }
+        
         function getProgramacionModal() {
             return `
         <div id="programacionModal" class="modal">
@@ -3584,10 +3620,65 @@
                             <input type="date" id="programacionFechaFin" class="form-control" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Horario *</label>
-                            <input type="time" id="programacionHoraInicio" class="form-control" required>
-                            <input type="time" id="programacionHoraFin" class="form-control" required style="margin-top:8px;">
-                            <small style="color: var(--sena-gray); margin-top: 4px; display: block;">Ejemplo: 08:00 a 12:00</small>
+                            <label class="form-label">Hora Inicio *</label>
+                            <div style="display: flex; gap: 8px;">
+                                <select id="programacionHoraInicioHora" class="form-control" required style="flex: 1;">
+                                    <option value="">Hora</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                </select>
+                                <select id="programacionHoraInicioMinuto" class="form-control" required style="flex: 1;">
+                                    <option value="">Minuto</option>
+                                    <option value="00">:00</option>
+                                    <option value="30">:30</option>
+                                </select>
+                                <select id="programacionHoraInicioPeriodo" class="form-control" required style="flex: 1;">
+                                    <option value="">AM/PM</option>
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Hora Fin *</label>
+                            <div style="display: flex; gap: 8px;">
+                                <select id="programacionHoraFinHora" class="form-control" required style="flex: 1;">
+                                    <option value="">Hora</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5</option>
+                                    <option value="6">6</option>
+                                    <option value="7">7</option>
+                                    <option value="8">8</option>
+                                    <option value="9">9</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                </select>
+                                <select id="programacionHoraFinMinuto" class="form-control" required style="flex: 1;">
+                                    <option value="">Minuto</option>
+                                    <option value="00">:00</option>
+                                    <option value="30">:30</option>
+                                </select>
+                                <select id="programacionHoraFinPeriodo" class="form-control" required style="flex: 1;">
+                                    <option value="">AM/PM</option>
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
+                            <small style="color: var(--sena-gray); margin-top: 4px; display: block;">Ejemplo: 8:00 AM a 12:00 PM</small>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Estado *</label>
@@ -3625,8 +3716,19 @@
             const horas = parseInt(document.getElementById('programacionHoras').value);
             const fechaInicio = document.getElementById('programacionFechaInicio').value;
             const fechaFin = document.getElementById('programacionFechaFin').value;
-            const horaInicio = document.getElementById('programacionHoraInicio').value;
-            const horaFin = document.getElementById('programacionHoraFin').value;
+            
+            // Obtener valores de los selectores de hora
+            const horaInicioHora = document.getElementById('programacionHoraInicioHora').value;
+            const horaInicioMinuto = document.getElementById('programacionHoraInicioMinuto').value;
+            const horaInicioPeriodo = document.getElementById('programacionHoraInicioPeriodo').value;
+            const horaFinHora = document.getElementById('programacionHoraFinHora').value;
+            const horaFinMinuto = document.getElementById('programacionHoraFinMinuto').value;
+            const horaFinPeriodo = document.getElementById('programacionHoraFinPeriodo').value;
+            
+            // Convertir a formato 24 horas
+            const horaInicio = convertirA24Horas(horaInicioHora, horaInicioMinuto, horaInicioPeriodo);
+            const horaFin = convertirA24Horas(horaFinHora, horaFinMinuto, horaFinPeriodo);
+            
             const estado = document.getElementById('programacionEstado').value;
 
             // Validación de horario
@@ -3751,8 +3853,21 @@
             document.getElementById('programacionHoras').value = prog.horas;
             document.getElementById('programacionFechaInicio').value = prog.fecha_inicio || '';
             document.getElementById('programacionFechaFin').value = prog.fecha_fin || '';
-            document.getElementById('programacionHoraInicio').value = prog.hora_inicio || '';
-            document.getElementById('programacionHoraFin').value = prog.hora_fin || '';
+            
+            // Convertir hora de formato 24h a 12h y establecer valores
+            if (prog.hora_inicio) {
+                const [horaI, minutoI, periodoI] = convertirA12Horas(prog.hora_inicio);
+                document.getElementById('programacionHoraInicioHora').value = horaI;
+                document.getElementById('programacionHoraInicioMinuto').value = minutoI;
+                document.getElementById('programacionHoraInicioPeriodo').value = periodoI;
+            }
+            if (prog.hora_fin) {
+                const [horaF, minutoF, periodoF] = convertirA12Horas(prog.hora_fin);
+                document.getElementById('programacionHoraFinHora').value = horaF;
+                document.getElementById('programacionHoraFinMinuto').value = minutoF;
+                document.getElementById('programacionHoraFinPeriodo').value = periodoF;
+            }
+            
             document.getElementById('programacionEstado').value = prog.estado;
             document.getElementById('programacionModal').classList.add('active');
         }
