@@ -1435,6 +1435,177 @@
             outline: 2px solid var(--primary-600);
             outline-offset: 2px;
         }
+        
+        /* ========== CUSTOM DIALOGS ========== */
+        .custom-dialog {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(12px);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.2s ease;
+        }
+        
+        .custom-dialog.active {
+            display: flex;
+        }
+        
+        .custom-dialog-content {
+            background: var(--bg-white);
+            border-radius: 16px;
+            min-width: 380px;
+            max-width: 480px;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+            animation: dialogSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            overflow: hidden;
+        }
+        
+        @keyframes dialogSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .custom-dialog-header {
+            padding: 24px 24px 16px;
+            text-align: center;
+        }
+        
+        .custom-dialog-icon {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        
+        .custom-dialog-icon.success {
+            background: linear-gradient(135deg, #39A900 0%, #52DC06 100%);
+            color: white;
+        }
+        
+        .custom-dialog-icon.error {
+            background: linear-gradient(135deg, #FF3B30 0%, #FF6B61 100%);
+            color: white;
+        }
+        
+        .custom-dialog-icon.warning {
+            background: linear-gradient(135deg, #FF9500 0%, #FFC042 100%);
+            color: white;
+        }
+        
+        .custom-dialog-icon.info {
+            background: linear-gradient(135deg, #007AFF 0%, #5AC8FA 100%);
+            color: white;
+        }
+        
+        .custom-dialog-icon.question {
+            background: linear-gradient(135deg, #39A900 0%, #52DC06 100%);
+            color: white;
+        }
+        
+        .custom-dialog-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+        
+        .custom-dialog-message {
+            padding: 0 24px 24px;
+            font-size: 15px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            text-align: center;
+            white-space: pre-line;
+        }
+        
+        .custom-dialog-input {
+            margin: 0 24px 24px;
+        }
+        
+        .custom-dialog-input input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: all 0.3s ease;
+            background: var(--bg-light);
+            color: var(--text-dark);
+        }
+        
+        .custom-dialog-input input:focus {
+            outline: none;
+            border-color: var(--primary-600);
+            background: var(--bg-white);
+            box-shadow: 0 0 0 4px rgba(57, 169, 0, 0.1);
+        }
+        
+        .custom-dialog-buttons {
+            padding: 16px 24px 24px;
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+        
+        .custom-dialog-btn {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .custom-dialog-btn.primary {
+            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(57, 169, 0, 0.3);
+        }
+        
+        .custom-dialog-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(57, 169, 0, 0.4);
+        }
+        
+        .custom-dialog-btn.secondary {
+            background: var(--bg-light);
+            color: var(--text-dark);
+        }
+        
+        .custom-dialog-btn.secondary:hover {
+            background: var(--border-color);
+        }
+        
+        .custom-dialog-btn.danger {
+            background: linear-gradient(135deg, #FF3B30 0%, #FF6B61 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+        }
+        
+        .custom-dialog-btn.danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(255, 59, 48, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -1814,7 +1985,12 @@
         }
         
         async function handleLogout() {
-            if (confirm('¿Está seguro que desea cerrar sesión?')) {
+            const confirmLogout = await showCustomConfirm(
+                '¿Está seguro que desea cerrar sesión?',
+                'Cerrar Sesión'
+            );
+            
+            if (confirmLogout) {
                 try {
                     const { error } = await supabaseClient.auth.signOut();
                 } catch (error) {
@@ -1910,7 +2086,7 @@
             
             // Validar que el código sea único si es nuevo
             if (!id && fichas.some(f => f.codigo === codigo)) {
-                alert('❌ El código ya existe. Usa uno diferente.');
+                await showCustomAlert('El código ya existe. Usa uno diferente.', 'error');
                 return;
             }
 
@@ -1961,14 +2137,18 @@
                 
                 closeFichaModal();
                 updateFichasTable();
-                alert('✅ Ficha guardada correctamente');
+                await showCustomAlert('Ficha guardada correctamente', 'success');
             } catch (error) {
-                alert('❌ Error al guardar: ' + (error.message || 'Error desconocido'));
+                await showCustomAlert('Error al guardar: ' + (error.message || 'Error desconocido'), 'error');
             }
         }
         
         async function deleteFicha(id) {
-            if (!confirm('¿Eliminar esta ficha?')) return;
+            const confirmDelete = await showCustomConfirm(
+                '¿Eliminar esta ficha?\n\nEsta acción también eliminará todas las competencias y programaciones asociadas.',
+                'Eliminar Ficha'
+            );
+            if (!confirmDelete) return;
             
             try {
                 if (isConnected) {
@@ -1982,9 +2162,9 @@
                 competencias = competencias.filter(c => c.ficha_id !== id);
                 fichas = fichas.filter(f => f.id !== id);
                 updateFichasTable();
-                alert('✅ Ficha eliminada');
+                await showCustomAlert('Ficha eliminada correctamente', 'success');
             } catch (error) {
-                alert('❌ Error: ' + error.message);
+                await showCustomAlert('Error: ' + error.message, 'error');
             }
         }
         
@@ -1992,12 +2172,16 @@
         async function duplicateFicha(id) {
             const fichaOriginal = fichas.find(f => f.id === id);
             if (!fichaOriginal) {
-                alert('❌ No se encontró la ficha');
+                await showCustomAlert('No se encontró la ficha', 'error');
                 return;
             }
             
             // Pedir el código nuevo para la ficha duplicada
-            const nuevoCodigo = prompt('Ingresa el código para la ficha duplicada:', fichaOriginal.codigo + '+');
+            const nuevoCodigo = await showCustomPrompt(
+                'Ingresa el código para la ficha duplicada:',
+                fichaOriginal.codigo + '+',
+                'Duplicar Ficha'
+            );
             
             if (!nuevoCodigo) {
                 return; // Usuario canceló
@@ -2005,7 +2189,7 @@
             
             // Validar que el nuevo código sea único
             if (fichas.some(f => f.codigo === nuevoCodigo)) {
-                alert('❌ El código ya existe. Usa un código diferente.');
+                await showCustomAlert('El código ya existe. Usa un código diferente.', 'error');
                 return;
             }
 
@@ -2071,17 +2255,20 @@
                 updateFichasTable();
                 
                 // Mostrar mensaje y redirigir a competencias
-                alert('✅ Ficha duplicada correctamente.\n\n📌 La ficha y sus competencias han sido duplicadas.\n\n' + 
-                      'Ficha: ' + nuevaFicha.nombre + '\n' +
-                      'Código: ' + nuevoCodigo + '\n' +
-                      'Competencias duplicadas: ' + nuevasCompetencias.length + '\n\n' +
-                      'Las competencias duplicadas estarán resaltadas temporalmente para que las identifiques.');
+                await showCustomAlert(
+                    'Ficha duplicada correctamente.\n\n' +
+                    '📌 Ficha: ' + nuevaFicha.nombre + '\n' +
+                    'Código: ' + nuevoCodigo + '\n' +
+                    'Competencias duplicadas: ' + nuevasCompetencias.length + '\n\n' +
+                    'Las competencias duplicadas estarán resaltadas temporalmente.',
+                    'success'
+                );
                 
                 // Redirigir automáticamente a la sección de competencias
                 showSection('competencias');
                 
             } catch (error) {
-                alert('❌ Error al duplicar la ficha: ' + (error.message || 'Error desconocido'));
+                await showCustomAlert('Error al duplicar la ficha: ' + (error.message || 'Error desconocido'), 'error');
             }
         }
         
@@ -2329,6 +2516,162 @@
                     lucide.createIcons();
                 }
             }, 100);
+        }
+        
+        // ========== CUSTOM DIALOG FUNCTIONS ==========
+        function showCustomAlert(message, type = 'info') {
+            return new Promise((resolve) => {
+                const dialog = document.createElement('div');
+                dialog.className = 'custom-dialog active';
+                
+                const icons = {
+                    success: '✓',
+                    error: '✕',
+                    warning: '⚠',
+                    info: 'ℹ'
+                };
+                
+                const titles = {
+                    success: 'Éxito',
+                    error: 'Error',
+                    warning: 'Advertencia',
+                    info: 'Información'
+                };
+                
+                dialog.innerHTML = `
+                    <div class="custom-dialog-content">
+                        <div class="custom-dialog-header">
+                            <div class="custom-dialog-icon ${type}">
+                                ${icons[type] || icons.info}
+                            </div>
+                            <div class="custom-dialog-title">${titles[type] || titles.info}</div>
+                        </div>
+                        <div class="custom-dialog-message">${message}</div>
+                        <div class="custom-dialog-buttons">
+                            <button class="custom-dialog-btn primary" onclick="this.closest('.custom-dialog').remove()">Aceptar</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(dialog);
+                
+                dialog.querySelector('.custom-dialog-btn').addEventListener('click', () => {
+                    dialog.remove();
+                    resolve(true);
+                });
+                
+                // Cerrar con ESC
+                const handleEsc = (e) => {
+                    if (e.key === 'Escape') {
+                        dialog.remove();
+                        document.removeEventListener('keydown', handleEsc);
+                        resolve(true);
+                    }
+                };
+                document.addEventListener('keydown', handleEsc);
+            });
+        }
+        
+        function showCustomConfirm(message, title = '¿Estás seguro?') {
+            return new Promise((resolve) => {
+                const dialog = document.createElement('div');
+                dialog.className = 'custom-dialog active';
+                
+                dialog.innerHTML = `
+                    <div class="custom-dialog-content">
+                        <div class="custom-dialog-header">
+                            <div class="custom-dialog-icon question">
+                                ?
+                            </div>
+                            <div class="custom-dialog-title">${title}</div>
+                        </div>
+                        <div class="custom-dialog-message">${message}</div>
+                        <div class="custom-dialog-buttons">
+                            <button class="custom-dialog-btn secondary" data-action="cancel">Cancelar</button>
+                            <button class="custom-dialog-btn primary" data-action="confirm">Confirmar</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(dialog);
+                
+                dialog.querySelectorAll('.custom-dialog-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const action = e.target.dataset.action;
+                        dialog.remove();
+                        resolve(action === 'confirm');
+                    });
+                });
+                
+                // Cerrar con ESC = cancelar
+                const handleEsc = (e) => {
+                    if (e.key === 'Escape') {
+                        dialog.remove();
+                        document.removeEventListener('keydown', handleEsc);
+                        resolve(false);
+                    }
+                };
+                document.addEventListener('keydown', handleEsc);
+            });
+        }
+        
+        function showCustomPrompt(message, defaultValue = '', title = 'Ingresa un valor') {
+            return new Promise((resolve) => {
+                const dialog = document.createElement('div');
+                dialog.className = 'custom-dialog active';
+                
+                dialog.innerHTML = `
+                    <div class="custom-dialog-content">
+                        <div class="custom-dialog-header">
+                            <div class="custom-dialog-icon info">
+                                ✎
+                            </div>
+                            <div class="custom-dialog-title">${title}</div>
+                        </div>
+                        <div class="custom-dialog-message">${message}</div>
+                        <div class="custom-dialog-input">
+                            <input type="text" value="${defaultValue}" id="customPromptInput" autofocus>
+                        </div>
+                        <div class="custom-dialog-buttons">
+                            <button class="custom-dialog-btn secondary" data-action="cancel">Cancelar</button>
+                            <button class="custom-dialog-btn primary" data-action="confirm">Aceptar</button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(dialog);
+                const input = dialog.querySelector('#customPromptInput');
+                
+                // Focus y seleccionar texto
+                setTimeout(() => {
+                    input.focus();
+                    input.select();
+                }, 100);
+                
+                const handleAction = (action) => {
+                    const value = input.value.trim();
+                    dialog.remove();
+                    document.removeEventListener('keydown', handleKeydown);
+                    resolve(action === 'confirm' ? value || null : null);
+                };
+                
+                dialog.querySelectorAll('.custom-dialog-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        handleAction(e.target.dataset.action);
+                    });
+                });
+                
+                // Enter = confirmar, ESC = cancelar
+                const handleKeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAction('confirm');
+                    } else if (e.key === 'Escape') {
+                        handleAction('cancel');
+                    }
+                };
+                document.addEventListener('keydown', handleKeydown);
+            });
         }
 
         // ========== RENDER FUNCTIONS ==========
@@ -2827,14 +3170,18 @@
                 }
                 closeCompetenciaModal();
                 updateCompetenciasTable();
-                alert('✅ Competencia guardada');
+                await showCustomAlert('Competencia guardada correctamente', 'success');
             } catch (error) {
-                alert('❌ Error: ' + error.message);
+                await showCustomAlert('Error: ' + error.message, 'error');
             }
         }
 
         async function deleteCompetencia(id) {
-            if (!confirm('¿Eliminar esta competencia?')) return;
+            const confirmDelete = await showCustomConfirm(
+                '¿Eliminar esta competencia?\n\nEsta acción también eliminará todas las programaciones asociadas.',
+                'Eliminar Competencia'
+            );
+            if (!confirmDelete) return;
             try {
                 if (isConnected) {
                     await supabaseClient.from('programaciones').delete().eq('competencia_id', id);
@@ -2844,9 +3191,9 @@
                 programaciones = programaciones.filter(p => p.competencia_id !== id);
                 competencias = competencias.filter(c => c.id !== id);
                 updateCompetenciasTable();
-                alert('✅ Competencia eliminada');
+                await showCustomAlert('Competencia eliminada correctamente', 'success');
             } catch (error) {
-                alert('❌ Error: ' + error.message);
+                await showCustomAlert('Error: ' + error.message, 'error');
             }
         }
 
@@ -3058,14 +3405,18 @@
                 }
                 closeAmbienteModal();
                 updateAmbientesTable();
-                alert('✅ Ambiente guardado');
+                await showCustomAlert('Ambiente guardado correctamente', 'success');
             } catch (error) {
-                alert('❌ Error: ' + error.message);
+                await showCustomAlert('Error: ' + error.message, 'error');
             }
         }
 
         async function deleteAmbiente(id) {
-            if (!confirm('¿Eliminar este ambiente?')) return;
+            const confirmDelete = await showCustomConfirm(
+                '¿Eliminar este ambiente?',
+                'Eliminar Ambiente'
+            );
+            if (!confirmDelete) return;
             try {
                 if (isConnected) {
                     const { error } = await supabaseClient.from('ambientes').delete().eq('id', id);
@@ -3073,9 +3424,9 @@
                 }
                 ambientes = ambientes.filter(a => a.id !== id);
                 updateAmbientesTable();
-                alert('✅ Ambiente eliminado');
+                await showCustomAlert('Ambiente eliminado correctamente', 'success');
             } catch (error) {
-                alert('❌ Error: ' + error.message);
+                await showCustomAlert('Error: ' + error.message, 'error');
             }
         }
 
@@ -3256,11 +3607,11 @@
             const horas = parseInt(document.getElementById('instructorHoras').value);
 
             if (!validateEmail(correo)) {
-                alert('❌ Correo inválido');
+                await showCustomAlert('Correo inválido', 'error');
                 return;
             }
             if (!validatePhone(celular)) {
-                alert('❌ Celular debe tener 10 dígitos');
+                await showCustomAlert('Celular debe tener 10 dígitos', 'error');
                 return;
             }
 
@@ -3290,14 +3641,18 @@
                 }
                 closeInstructorModal();
                 updateInstructoresTable();
-                alert('✅ Instructor guardado');
+                await showCustomAlert('Instructor guardado correctamente', 'success');
             } catch (error) {
-                alert('❌ Error: ' + error.message);
+                await showCustomAlert('Error: ' + error.message, 'error');
             }
         }
 
         async function deleteInstructor(id) {
-            if (!confirm('¿Eliminar este instructor?')) return;
+            const confirmDelete = await showCustomConfirm(
+                '¿Eliminar este instructor?',
+                'Eliminar Instructor'
+            );
+            if (!confirmDelete) return;
             try {
                 if (isConnected) {
                     const { error } = await supabaseClient.from('instructores').delete().eq('id', id);
@@ -3305,9 +3660,9 @@
                 }
                 instructores = instructores.filter(i => i.id !== id);
                 updateInstructoresTable();
-                alert('✅ Instructor eliminado');
+                await showCustomAlert('Instructor eliminado correctamente', 'success');
             } catch (error) {
-                alert('❌ Error: ' + error.message);
+                await showCustomAlert('Error: ' + error.message, 'error');
             }
         }
 
@@ -3511,7 +3866,7 @@
         async function reenviarCorreoProgramacion(programacionId) {
             const programacion = programaciones.find(p => p.id === programacionId);
             if (!programacion) {
-                alert('❌ Programación no encontrada');
+                await showCustomAlert('Programación no encontrada', 'error');
                 return;
             }
 
@@ -3520,7 +3875,7 @@
             const ficha = fichas.find(f => f.id === programacion.ficha_id);
 
             if (!instructor || !competencia || !ficha) {
-                alert('❌ Faltan datos para enviar el correo');
+                await showCustomAlert('Faltan datos para enviar el correo', 'error');
                 return;
             }
 
@@ -3528,9 +3883,20 @@
             if (enviado.success) {
                 updateProgramacionesTable();
                 const usuario = currentUser ? currentUser.usuario : 'Sistema';
-                alert(`✅ Correo enviado a ${instructor.correo}\n\nFecha: ${new Date().toLocaleDateString('es-CO')}\nHora: ${new Date().toLocaleTimeString('es-CO')}\nEnviado por: ${usuario}`);
+                await showCustomAlert(
+                    `Correo enviado a ${instructor.correo}\n\n` +
+                    `Fecha: ${new Date().toLocaleDateString('es-CO')}\n` +
+                    `Hora: ${new Date().toLocaleTimeString('es-CO')}\n` +
+                    `Enviado por: ${usuario}`,
+                    'success'
+                );
             } else {
-                alert('❌ No se pudo enviar el correo.\n\nDetalle: ' + enviado.message + '\nVerifica SERVICE_ID, TEMPLATE_ID y PUBLIC_KEY de EmailJS.');
+                await showCustomAlert(
+                    'No se pudo enviar el correo.\n\n' +
+                    'Detalle: ' + enviado.message + '\n\n' +
+                    'Verifica la configuración de correo electrónico.',
+                    'error'
+                );
             }
         }
 
@@ -3733,17 +4099,17 @@
 
             // Validación de horario
             if (!horaInicio || !horaFin) {
-                alert('❌ Debes ingresar el horario de la competencia.');
+                await showCustomAlert('Debes ingresar el horario de la competencia.', 'error');
                 return;
             }
             if (horaFin <= horaInicio) {
-                alert('❌ La hora de fin debe ser mayor que la hora de inicio.');
+                await showCustomAlert('La hora de fin debe ser mayor que la hora de inicio.', 'error');
                 return;
             }
 
             // Validar que fecha de fin sea posterior a fecha de inicio
             if (new Date(fechaFin) <= new Date(fechaInicio)) {
-                alert('❌ La fecha de fin debe ser posterior a la fecha de inicio.');
+                await showCustomAlert('La fecha de fin debe ser posterior a la fecha de inicio.', 'error');
                 return;
             }
 
@@ -3758,8 +4124,53 @@
                 )
             );
             if (conflicto) {
-                alert('❌ Ya existe una programación en este ambiente y horario. Corrige el horario o selecciona otro ambiente.');
+                await showCustomAlert(
+                    'Ya existe una programación en este ambiente y horario.\n\nCorrige el horario o selecciona otro ambiente.',
+                    'error'
+                );
                 return;
+            }
+
+            // Validar restricción del 80%: Si un instructor ya tiene el 80% o más de las horas de una competencia,
+            // solo ese instructor puede programar las horas restantes
+            const competencia = competencias.find(c => c.id === competenciaId);
+            if (competencia) {
+                // Obtener programaciones existentes de esta competencia (excluyendo la actual si es edición)
+                const programacionesCompetencia = programaciones.filter(p => 
+                    p.competencia_id === competenciaId && p.id != id
+                );
+                
+                // Calcular horas por instructor
+                const horasPorInstructor = {};
+                programacionesCompetencia.forEach(p => {
+                    if (!horasPorInstructor[p.instructor_id]) {
+                        horasPorInstructor[p.instructor_id] = 0;
+                    }
+                    horasPorInstructor[p.instructor_id] += p.horas;
+                });
+                
+                // Buscar si algún instructor tiene 80% o más
+                const horasTotales = competencia.horas_totales;
+                const umbral80Porciento = horasTotales * 0.8;
+                let instructorMayoritario = null;
+                
+                for (const [instrId, horasAsignadas] of Object.entries(horasPorInstructor)) {
+                    if (horasAsignadas >= umbral80Porciento) {
+                        instructorMayoritario = parseInt(instrId);
+                        break;
+                    }
+                }
+                
+                // Si hay un instructor con 80% o más, validar que sea el mismo
+                if (instructorMayoritario && instructorMayoritario !== instructorId) {
+                    const instructor80 = instructores.find(i => i.id === instructorMayoritario);
+                    const porcentajeAsignado = Math.round((horasPorInstructor[instructorMayoritario] / horasTotales) * 100);
+                    await showCustomAlert(
+                        `Restricción del 80%\n\nEl instructor ${instructor80?.nombre || 'desconocido'} ya tiene el ${porcentajeAsignado}% de las horas de esta competencia programadas.\n\nSolo este instructor puede programar las horas restantes de esta competencia.`,
+                        'warning'
+                    );
+                    return;
+                }
             }
 
             const progData = {
@@ -3807,15 +4218,19 @@
                 }
                 closeProgramacionModal();
                 updateProgramacionesTable();
-                alert('✅ Programación guardada correctamente');
+                await showCustomAlert('Programación guardada correctamente', 'success');
 
             } catch (error) {
-                alert('❌ Error: ' + error.message);
+                await showCustomAlert('Error: ' + error.message, 'error');
             }
         }
 
         async function deleteProgramacion(id) {
-            if (!confirm('¿Eliminar esta programación?')) return;
+            const confirmDelete = await showCustomConfirm(
+                '¿Eliminar esta programación?',
+                'Eliminar Programación'
+            );
+            if (!confirmDelete) return;
             try {
                 if (isConnected) {
                     const { error } = await supabaseClient.from('programaciones').delete().eq('id', id);
@@ -3823,9 +4238,9 @@
                 }
                 programaciones = programaciones.filter(p => p.id !== id);
                 updateProgramacionesTable();
-                alert('✅ Programación eliminada');
+                await showCustomAlert('Programación eliminada correctamente', 'success');
             } catch (error) {
-                alert('❌ Error: ' + error.message);
+                await showCustomAlert('Error: ' + error.message, 'error');
             }
         }
 
