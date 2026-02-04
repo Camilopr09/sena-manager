@@ -3148,6 +3148,29 @@
             const nombre = document.getElementById('competenciaNombre').value.trim();
             const horas = parseInt(document.getElementById('competenciaHoras').value);
             
+            // Validar que no se excedan las horas totales de la ficha
+            const ficha = fichas.find(f => f.id === fichaId);
+            if (ficha) {
+                // Calcular horas ya asignadas a otras competencias de esta ficha
+                const horasAsignadas = competencias
+                    .filter(c => c.ficha_id === fichaId && c.id != id)
+                    .reduce((sum, c) => sum + c.horas_totales, 0);
+                
+                const horasActuales = id ? competencias.find(c => c.id === parseInt(id))?.horas_totales || 0 : 0;
+                const horasDisponibles = ficha.horas_totales - horasAsignadas;
+                
+                if (horas > horasDisponibles) {
+                    await showCustomAlert(
+                        `No se pueden asignar ${horas} horas a esta competencia.\n\n` +
+                        `La ficha "${ficha.nombre}" tiene ${ficha.horas_totales} horas totales.\n` +
+                        `Horas ya asignadas a otras competencias: ${horasAsignadas} horas.\n` +
+                        `Horas disponibles: ${horasDisponibles} horas.`,
+                        'error'
+                    );
+                    return;
+                }
+            }
+            
             const compData = { ficha_id: fichaId, nombre, horas_totales: horas };
             
             try {
