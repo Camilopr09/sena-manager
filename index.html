@@ -1727,7 +1727,7 @@
         const CIUDADES = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena', 'Riohacha', 'Maicao', 'Uribia', 'Manaure', 'Fonseca', 'San Juan del Cesar', 'Dibulla', 'Barrancas', 'Albania', 'Distracción', 'Hatonuevo', 'La Jagua del Pilar', 'Urumita', 'Villanueva', 'El Molino', 'Otras'];
         const TIPOS_AMBIENTE = ['Aula', 'Laboratorio', 'Taller', 'Virtual', 'Multiuso'];
         const ESTADOS_FICHA = ['Activo', 'Finalizado', 'Suspendido'];
-        const ESTADOS_PROGRAMACION = ['Programada', 'En ejecución', 'Finalizada'];
+        const ESTADOS_PROGRAMACION = ['Pendiente por programar', 'En ejecución', 'Finalizada', 'Subida a Sofia'];
         const NIVELES_FICHA = ['Técnico', 'Tecnólogo', 'Especialización', 'Auxiliar', 'Operario', 'Otro'];
 
         // USUARIOS - Se cargan desde Supabase
@@ -4131,9 +4131,27 @@
                 return;
             }
 
+            // Validar que no se excedan las horas totales de la competencia
+            const competencia = competencias.find(c => c.id === competenciaId);
+            if (competencia) {
+                const horasProgramadas = calcularHorasProgramadas(competenciaId);
+                const horasActuales = id ? programaciones.find(p => p.id === parseInt(id))?.horas || 0 : 0;
+                const horasDisponibles = competencia.horas_totales - horasProgramadas + horasActuales;
+                
+                if (horas > horasDisponibles) {
+                    await showCustomAlert(
+                        `No se pueden programar ${horas} horas.\n\n` +
+                        `La competencia tiene ${competencia.horas_totales} horas totales.\n` +
+                        `Horas ya programadas: ${horasProgramadas - horasActuales} horas.\n` +
+                        `Horas disponibles: ${horasDisponibles} horas.`,
+                        'error'
+                    );
+                    return;
+                }
+            }
+
             // Validar restricción del 80%: Si un instructor ya tiene el 80% o más de las horas de una competencia,
             // solo ese instructor puede programar las horas restantes
-            const competencia = competencias.find(c => c.id === competenciaId);
             if (competencia) {
                 // Obtener programaciones existentes de esta competencia (excluyendo la actual si es edición)
                 const programacionesCompetencia = programaciones.filter(p => 
