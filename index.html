@@ -1187,12 +1187,20 @@
         
         /* Status Badge */
         .status-badge {
-            display: inline-block;
-            padding: 6px 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
             border-radius: 20px;
             font-size: 13px;
             font-weight: 600;
             letter-spacing: 0.3px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .status-badge i {
+            width: 14px;
+            height: 14px;
         }
         
         .status-activo {
@@ -1200,7 +1208,7 @@
             color: var(--primary-800);
         }
         
-        .status-finalizado {
+        .status-finalizado, .status-finalizada {
             background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
             color: #1565C0;
         }
@@ -1215,9 +1223,19 @@
             color: #F57F17;
         }
         
-        .status-ejecucion {
+        .status-pendienteporprogramar {
+            background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+            color: #E65100;
+        }
+        
+        .status-enejecución, .status-enejecucion {
             background: linear-gradient(135deg, #E1F5FE 0%, #B3E5FC 100%);
             color: #0277BD;
+        }
+        
+        .status-subidasofia {
+            background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+            color: #2E7D32;
         }
         
         /* Empty State */
@@ -1845,6 +1863,9 @@
                 // Cargar registro de correos enviados
                 await loadEmailLogFromDatabase();
                 
+                // Actualizar estados antiguos a los nuevos
+                await actualizarEstadosProgramacion();
+                
             } catch (error) {
                 throw error;
             }
@@ -2294,6 +2315,56 @@
         
         function validatePhone(phone) {
             return /^\d{10}$/.test(phone);
+        }
+        
+        // Función para obtener badge con icono según el estado
+        function getEstadoBadge(estado) {
+            const iconos = {
+                'Pendiente por programar': 'clock',
+                'En ejecución': 'play-circle',
+                'Finalizada': 'check-circle',
+                'Subida a Sofia': 'upload-cloud'
+            };
+            
+            const icon = iconos[estado] || 'circle';
+            const estadoClass = estado.toLowerCase().replace(/\s+/g, '');
+            
+            return `<span class="status-badge status-${estadoClass}"><i data-lucide="${icon}"></i>${estado}</span>`;
+        }
+        
+        // Función para actualizar estados "Programada" a "Pendiente por programar"
+        async function actualizarEstadosProgramacion() {
+            let actualizados = 0;
+            
+            for (const prog of programaciones) {
+                if (prog.estado === 'Programada') {
+                    prog.estado = 'Pendiente por programar';
+                    
+                    // Actualizar en la base de datos si está conectado
+                    if (isConnected) {
+                        try {
+                            const { error } = await supabaseClient
+                                .from('programaciones')
+                                .update({ estado: 'Pendiente por programar' })
+                                .eq('id', prog.id);
+                            
+                            if (!error) {
+                                actualizados++;
+                            }
+                        } catch (error) {
+                            console.error(`Error actualizando programación ${prog.id}:`, error);
+                        }
+                    } else {
+                        actualizados++;
+                    }
+                }
+            }
+            
+            if (actualizados > 0) {
+                updateProgramacionesTable();
+                return actualizados;
+            }
+            return 0;
         }
         
         // ========== EMAIL FUNCTIONS ==========
@@ -3859,7 +3930,7 @@
                         <td>${p.horas}h</td>
                         <td>${p.fecha_inicio || 'N/A'}</td>
                         <td>${p.fecha_fin || 'N/A'}</td>
-                        <td><span class="status-badge status-${p.estado.toLowerCase().replace(' ', '')}">${p.estado}</span></td>
+                        <td>${getEstadoBadge(p.estado)}</td>
                         <td>
                             ${envioInfo 
                                 ? `<span style="color: #27ae60; font-weight: bold; display: flex; align-items: center; gap: 4px;"><i data-lucide="check-circle" style="width: 16px; height: 16px;"></i> Enviado<br><small>${envioInfo.fecha_envio}<br>${envioInfo.hora_envio}<br><strong>Por: ${envioInfo.usuario_envio || 'N/A'}</strong></small></span>`
