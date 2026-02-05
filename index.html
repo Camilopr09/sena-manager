@@ -1723,6 +1723,9 @@
         let currentUser = null;
         let currentSection = 'resumen';
         
+        // Suscripciones en tiempo real
+        let realtimeSubscriptions = [];
+        
         // Data stores
         let fichas = [];
         let competencias = [];
@@ -1866,6 +1869,9 @@
                 // Actualizar estados antiguos a los nuevos
                 await actualizarEstadosProgramacion();
                 
+                // ⚡ Configurar actualizaciones en tiempo real
+                await setupRealtimeSubscriptions();
+                
             } catch (error) {
                 throw error;
             }
@@ -1882,6 +1888,247 @@
                 statusEl.textContent = '⏳ Conectando...';
             } else if (status === 'error') {
                 statusEl.textContent = '❌ Error de conexión';
+            }
+        }
+        
+        // ========== REALTIME SUBSCRIPTIONS ==========
+        async function setupRealtimeSubscriptions() {
+            if (!supabaseClient || !isConnected) return;
+            
+            try {
+                // Limpiar suscripciones anteriores
+                await cleanupRealtimeSubscriptions();
+                
+                // Suscribirse a cambios en fichas
+                const fichasChannel = supabaseClient
+                    .channel('fichas-changes')
+                    .on('postgres_changes', 
+                        { event: '*', schema: 'public', table: 'fichas' },
+                        handleFichaChange
+                    )
+                    .subscribe();
+                realtimeSubscriptions.push(fichasChannel);
+                
+                // Suscribirse a cambios en competencias
+                const competenciasChannel = supabaseClient
+                    .channel('competencias-changes')
+                    .on('postgres_changes',
+                        { event: '*', schema: 'public', table: 'competencias' },
+                        handleCompetenciaChange
+                    )
+                    .subscribe();
+                realtimeSubscriptions.push(competenciasChannel);
+                
+                // Suscribirse a cambios en ambientes
+                const ambientesChannel = supabaseClient
+                    .channel('ambientes-changes')
+                    .on('postgres_changes',
+                        { event: '*', schema: 'public', table: 'ambientes' },
+                        handleAmbienteChange
+                    )
+                    .subscribe();
+                realtimeSubscriptions.push(ambientesChannel);
+                
+                // Suscribirse a cambios en instructores
+                const instructoresChannel = supabaseClient
+                    .channel('instructores-changes')
+                    .on('postgres_changes',
+                        { event: '*', schema: 'public', table: 'instructores' },
+                        handleInstructorChange
+                    )
+                    .subscribe();
+                realtimeSubscriptions.push(instructoresChannel);
+                
+                // Suscribirse a cambios en programaciones
+                const programacionesChannel = supabaseClient
+                    .channel('programaciones-changes')
+                    .on('postgres_changes',
+                        { event: '*', schema: 'public', table: 'programaciones' },
+                        handleProgramacionChange
+                    )
+                    .subscribe();
+                realtimeSubscriptions.push(programacionesChannel);
+                
+                // Suscribirse a cambios en email_log
+                const emailLogChannel = supabaseClient
+                    .channel('email-log-changes')
+                    .on('postgres_changes',
+                        { event: '*', schema: 'public', table: 'email_log' },
+                        handleEmailLogChange
+                    )
+                    .subscribe();
+                realtimeSubscriptions.push(emailLogChannel);
+                
+            } catch (error) {
+                console.error('Error configurando suscripciones en tiempo real:', error);
+            }
+        }
+        
+        async function cleanupRealtimeSubscriptions() {
+            for (const subscription of realtimeSubscriptions) {
+                try {
+                    await supabaseClient.removeChannel(subscription);
+                } catch (error) {
+                    // Ignorar errores al limpiar
+                }
+            }
+            realtimeSubscriptions = [];
+        }
+        
+        // Handlers para cambios en tiempo real
+        function handleFichaChange(payload) {
+            const { eventType, new: newRecord, old: oldRecord } = payload;
+            
+            if (eventType === 'INSERT') {
+                // Verificar si ya existe para evitar duplicados
+                if (!fichas.find(f => f.id === newRecord.id)) {
+                    fichas.push(newRecord);
+                    if (newRecord.id >= nextFichaId) {
+                        nextFichaId = newRecord.id + 1;
+                    }
+                }
+            } else if (eventType === 'UPDATE') {
+                const index = fichas.findIndex(f => f.id === newRecord.id);
+                if (index !== -1) {
+                    fichas[index] = newRecord;
+                }
+            } else if (eventType === 'DELETE') {
+                fichas = fichas.filter(f => f.id !== oldRecord.id);
+            }
+            
+            // Actualizar vista si estamos en la sección de fichas o resumen
+            if (currentSection === 'fichas') {
+                updateFichasTable();
+            } else if (currentSection === 'resumen') {
+                renderResumen(document.getElementById('mainContent'));
+            }
+        }
+        
+        function handleCompetenciaChange(payload) {
+            const { eventType, new: newRecord, old: oldRecord } = payload;
+            
+            if (eventType === 'INSERT') {
+                if (!competencias.find(c => c.id === newRecord.id)) {
+                    competencias.push(newRecord);
+                    if (newRecord.id >= nextCompetenciaId) {
+                        nextCompetenciaId = newRecord.id + 1;
+                    }
+                }
+            } else if (eventType === 'UPDATE') {
+                const index = competencias.findIndex(c => c.id === newRecord.id);
+                if (index !== -1) {
+                    competencias[index] = newRecord;
+                }
+            } else if (eventType === 'DELETE') {
+                competencias = competencias.filter(c => c.id !== oldRecord.id);
+            }
+            
+            // Actualizar vista si estamos en la sección de competencias o resumen
+            if (currentSection === 'competencias') {
+                updateCompetenciasTable();
+            } else if (currentSection === 'resumen') {
+                renderResumen(document.getElementById('mainContent'));
+            }
+        }
+        
+        function handleAmbienteChange(payload) {
+            const { eventType, new: newRecord, old: oldRecord } = payload;
+            
+            if (eventType === 'INSERT') {
+                if (!ambientes.find(a => a.id === newRecord.id)) {
+                    ambientes.push(newRecord);
+                    if (newRecord.id >= nextAmbienteId) {
+                        nextAmbienteId = newRecord.id + 1;
+                    }
+                }
+            } else if (eventType === 'UPDATE') {
+                const index = ambientes.findIndex(a => a.id === newRecord.id);
+                if (index !== -1) {
+                    ambientes[index] = newRecord;
+                }
+            } else if (eventType === 'DELETE') {
+                ambientes = ambientes.filter(a => a.id !== oldRecord.id);
+            }
+            
+            // Actualizar vista si estamos en la sección de ambientes o resumen
+            if (currentSection === 'ambientes') {
+                updateAmbientesTable();
+            } else if (currentSection === 'resumen') {
+                renderResumen(document.getElementById('mainContent'));
+            }
+        }
+        
+        function handleInstructorChange(payload) {
+            const { eventType, new: newRecord, old: oldRecord } = payload;
+            
+            if (eventType === 'INSERT') {
+                if (!instructores.find(i => i.id === newRecord.id)) {
+                    instructores.push(newRecord);
+                    if (newRecord.id >= nextInstructorId) {
+                        nextInstructorId = newRecord.id + 1;
+                    }
+                }
+            } else if (eventType === 'UPDATE') {
+                const index = instructores.findIndex(i => i.id === newRecord.id);
+                if (index !== -1) {
+                    instructores[index] = newRecord;
+                }
+            } else if (eventType === 'DELETE') {
+                instructores = instructores.filter(i => i.id !== oldRecord.id);
+            }
+            
+            // Actualizar vista si estamos en la sección de instructores o resumen
+            if (currentSection === 'instructores') {
+                updateInstructoresTable();
+            } else if (currentSection === 'resumen') {
+                renderResumen(document.getElementById('mainContent'));
+            }
+        }
+        
+        function handleProgramacionChange(payload) {
+            const { eventType, new: newRecord, old: oldRecord } = payload;
+            
+            if (eventType === 'INSERT') {
+                if (!programaciones.find(p => p.id === newRecord.id)) {
+                    programaciones.push(newRecord);
+                    if (newRecord.id >= nextProgramacionId) {
+                        nextProgramacionId = newRecord.id + 1;
+                    }
+                }
+            } else if (eventType === 'UPDATE') {
+                const index = programaciones.findIndex(p => p.id === newRecord.id);
+                if (index !== -1) {
+                    programaciones[index] = newRecord;
+                }
+            } else if (eventType === 'DELETE') {
+                programaciones = programaciones.filter(p => p.id !== oldRecord.id);
+            }
+            
+            // Actualizar vista si estamos en la sección de programación, competencias o resumen
+            if (currentSection === 'programacion') {
+                updateProgramacionesTable();
+            } else if (currentSection === 'competencias') {
+                updateCompetenciasTable();
+            } else if (currentSection === 'resumen') {
+                renderResumen(document.getElementById('mainContent'));
+            }
+        }
+        
+        function handleEmailLogChange(payload) {
+            const { eventType, new: newRecord } = payload;
+            
+            if (eventType === 'INSERT') {
+                const key = `prog_${newRecord.programacion_id}`;
+                emailLog[key] = {
+                    fecha_envio: newRecord.fecha_envio,
+                    hora_envio: newRecord.hora_envio,
+                    usuario_envio: newRecord.usuario_envio || 'N/A'
+                };
+                
+                // Actualizar vista si estamos en programación
+                if (currentSection === 'programacion') {
+                    updateProgramacionesTable();
+                }
             }
         }
 
@@ -2013,6 +2260,9 @@
             
             if (confirmLogout) {
                 try {
+                    // Limpiar suscripciones en tiempo real
+                    await cleanupRealtimeSubscriptions();
+                    
                     const { error } = await supabaseClient.auth.signOut();
                 } catch (error) {
                     // Ignorar errores de logout
