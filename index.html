@@ -3594,7 +3594,6 @@
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Código</th>
                                         <th>ID</th>
                                         <th>Nombre</th>
                                         <th>Tipo</th>
@@ -3635,13 +3634,12 @@
             if (!tbody) return;
             
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No se encontraron ambientes</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state">No se encontraron ambientes</td></tr>';
                 return;
             }
             
             tbody.innerHTML = filtered.map(a => `
                 <tr>
-                    <td><strong style="color: var(--sena-blue);">${a.codigo || 'N/A'}</strong></td>
                     <td>${a.id}</td>
                     <td><strong>${a.nombre}</strong></td>
                     <td>${a.tipo}</td>
@@ -3675,10 +3673,6 @@
                         </div>
                         <div class="modal-body">
                             <form id="ambienteForm" onsubmit="saveAmbiente(event)">
-                                <div class="form-group">
-                                    <label class="form-label">Código *</label>
-                                    <input type="text" id="ambienteCodigo" class="form-control" required placeholder="Ej: A101, LAB-02">
-                                </div>
                                 <div class="form-group">
                                     <label class="form-label">Nombre *</label>
                                     <input type="text" id="ambienteNombre" class="form-control" required minlength="3">
@@ -3722,20 +3716,13 @@
         async function saveAmbiente(event) {
             event.preventDefault();
             const id = document.getElementById('ambienteId').value;
-            const codigo = document.getElementById('ambienteCodigo').value.trim();
             const nombre = document.getElementById('ambienteNombre').value.trim();
             const tipo = document.getElementById('ambienteTipo').value;
             const capacidad = parseInt(document.getElementById('ambienteCapacidad').value);
             const ciudad = document.getElementById('ambienteCiudad').value;
             const disponible = document.getElementById('ambienteDisponible').checked;
             
-            // Validar que el código sea único si es nuevo
-            if (!id && ambientes.some(a => a.codigo === codigo)) {
-                await showCustomAlert('El código ya existe. Usa uno diferente.', 'error');
-                return;
-            }
-            
-            const ambData = { codigo, nombre, tipo, capacidad, ciudad, disponible };
+            const ambData = { nombre, tipo, capacidad, ciudad, disponible };
             
             try {
                 if (id) {
@@ -3784,7 +3771,6 @@
             document.getElementById('ambienteModalTitle').textContent = 'Nuevo Ambiente';
             document.getElementById('ambienteForm').reset();
             document.getElementById('ambienteId').value = '';
-            document.getElementById('ambienteCodigo').value = '';
             document.getElementById('ambienteDisponible').checked = true;
             document.getElementById('ambienteModal').classList.add('active');
         }
@@ -3799,7 +3785,6 @@
             
             document.getElementById('ambienteModalTitle').textContent = 'Editar Ambiente';
             document.getElementById('ambienteId').value = ambiente.id;
-            document.getElementById('ambienteCodigo').value = ambiente.codigo || '';
             document.getElementById('ambienteNombre').value = ambiente.nombre;
             document.getElementById('ambienteTipo').value = ambiente.tipo;
             document.getElementById('ambienteCapacidad').value = ambiente.capacidad;
