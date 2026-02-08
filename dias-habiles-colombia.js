@@ -47,7 +47,11 @@ const FESTIVOS_COLOMBIA_2026 = [
  * @returns {boolean} - True si es festivo
  */
 function esFestivo(fecha) {
-    const fechaStr = fecha.toISOString().split('T')[0];
+    // Formatear fecha en zona horaria local (YYYY-MM-DD)
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getDate()).padStart(2, '0');
+    const fechaStr = `${year}-${month}-${day}`;
     return FESTIVOS_COLOMBIA_2026.some(f => f.fecha === fechaStr);
 }
 
@@ -77,8 +81,21 @@ function esDiaHabil(fecha) {
  * @returns {number} - Número de días hábiles
  */
 function calcularDiasHabiles(fechaInicio, fechaFin) {
-    const inicio = typeof fechaInicio === 'string' ? new Date(fechaInicio) : fechaInicio;
-    const fin = typeof fechaFin === 'string' ? new Date(fechaFin) : fechaFin;
+    // Convertir strings a Date usando zona horaria local
+    let inicio, fin;
+    if (typeof fechaInicio === 'string') {
+        const [year, month, day] = fechaInicio.split('-').map(Number);
+        inicio = new Date(year, month - 1, day);
+    } else {
+        inicio = new Date(fechaInicio);
+    }
+    
+    if (typeof fechaFin === 'string') {
+        const [year, month, day] = fechaFin.split('-').map(Number);
+        fin = new Date(year, month - 1, day);
+    } else {
+        fin = new Date(fechaFin);
+    }
     
     if (inicio > fin) {
         return 0;
@@ -135,8 +152,12 @@ function calcularHorasHabiles(fechaInicio, fechaFin, horaInicio, horaFin) {
  * @returns {Object} - Información detallada
  */
 function obtenerDetalleCalculo(fechaInicio, fechaFin) {
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
+    // Convertir strings a Date usando zona horaria local
+    const [yearI, monthI, dayI] = fechaInicio.split('-').map(Number);
+    const inicio = new Date(yearI, monthI - 1, dayI);
+    
+    const [yearF, monthF, dayF] = fechaFin.split('-').map(Number);
+    const fin = new Date(yearF, monthF - 1, dayF);
     
     let totalDias = 0;
     let diasHabiles = 0;
@@ -153,9 +174,13 @@ function obtenerDetalleCalculo(fechaInicio, fechaFin) {
             finesDeSemana++;
         } else if (esFestivo(fechaActual)) {
             festivos++;
-            const festivoInfo = FESTIVOS_COLOMBIA_2026.find(
-                f => f.fecha === fechaActual.toISOString().split('T')[0]
-            );
+            // Formatear fecha en zona horaria local
+            const year = fechaActual.getFullYear();
+            const month = String(fechaActual.getMonth() + 1).padStart(2, '0');
+            const day = String(fechaActual.getDate()).padStart(2, '0');
+            const fechaStr = `${year}-${month}-${day}`;
+            
+            const festivoInfo = FESTIVOS_COLOMBIA_2026.find(f => f.fecha === fechaStr);
             if (festivoInfo) {
                 festivosEncontrados.push({
                     fecha: festivoInfo.fecha,
