@@ -4339,64 +4339,13 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Hora Inicio *</label>
-                            <div style="display: flex; gap: 8px;">
-                                <select id="programacionHoraInicioHora" class="form-control" required style="flex: 1;">
-                                    <option value="">Hora</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                    <option value="6">6</option>
-                                    <option value="7">7</option>
-                                    <option value="8">8</option>
-                                    <option value="9">9</option>
-                                    <option value="10">10</option>
-                                    <option value="11">11</option>
-                                    <option value="12">12</option>
-                                </select>
-                                <select id="programacionHoraInicioMinuto" class="form-control" required style="flex: 1;">
-                                    <option value="">Minuto</option>
-                                    <option value="00">:00</option>
-                                    <option value="30">:30</option>
-                                </select>
-                                <select id="programacionHoraInicioPeriodo" class="form-control" required style="flex: 1;">
-                                    <option value="">AM/PM</option>
-                                    <option value="AM">AM</option>
-                                    <option value="PM">PM</option>
-                                </select>
-                            </div>
+                            <input type="time" id="programacionHoraInicio" class="form-control" required>
+                            <small style="color: var(--sena-gray); margin-top: 4px; display: block;">Formato 24 horas (ej: 08:00, 14:30)</small>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Hora Fin *</label>
-                            <div style="display: flex; gap: 8px;">
-                                <select id="programacionHoraFinHora" class="form-control" required style="flex: 1;">
-                                    <option value="">Hora</option>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                    <option value="5">5</option>
-                                    <option value="6">6</option>
-                                    <option value="7">7</option>
-                                    <option value="8">8</option>
-                                    <option value="9">9</option>
-                                    <option value="10">10</option>
-                                    <option value="11">11</option>
-                                    <option value="12">12</option>
-                                </select>
-                                <select id="programacionHoraFinMinuto" class="form-control" required style="flex: 1;">
-                                    <option value="">Minuto</option>
-                                    <option value="00">:00</option>
-                                    <option value="30">:30</option>
-                                </select>
-                                <select id="programacionHoraFinPeriodo" class="form-control" required style="flex: 1;">
-                                    <option value="">AM/PM</option>
-                                    <option value="AM">AM</option>
-                                    <option value="PM">PM</option>
-                                </select>
-                            </div>
-                            <small style="color: var(--sena-gray); margin-top: 4px; display: block;">Ejemplo: 8:00 AM a 12:00 PM</small>
+                            <input type="time" id="programacionHoraFin" class="form-control" required>
+                            <small style="color: var(--sena-gray); margin-top: 4px; display: block;">Formato 24 horas (ej: 12:00, 18:30)</small>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Estado *</label>
@@ -4439,17 +4388,9 @@
             const fechaInicio = document.getElementById('programacionFechaInicio').value;
             const fechaFin = document.getElementById('programacionFechaFin').value;
             
-            // Obtener valores de los selectores de hora
-            const horaInicioHora = document.getElementById('programacionHoraInicioHora').value;
-            const horaInicioMinuto = document.getElementById('programacionHoraInicioMinuto').value;
-            const horaInicioPeriodo = document.getElementById('programacionHoraInicioPeriodo').value;
-            const horaFinHora = document.getElementById('programacionHoraFinHora').value;
-            const horaFinMinuto = document.getElementById('programacionHoraFinMinuto').value;
-            const horaFinPeriodo = document.getElementById('programacionHoraFinPeriodo').value;
-            
-            // Convertir a formato 24 horas
-            const horaInicio = convertirA24Horas(horaInicioHora, horaInicioMinuto, horaInicioPeriodo);
-            const horaFin = convertirA24Horas(horaFinHora, horaFinMinuto, horaFinPeriodo);
+            // Obtener valores de hora en formato 24h
+            const horaInicio = document.getElementById('programacionHoraInicio').value;
+            const horaFin = document.getElementById('programacionHoraFin').value;
             
             const estado = document.getElementById('programacionEstado').value;
 
@@ -4646,18 +4587,12 @@
             document.getElementById('programacionFechaInicio').value = prog.fecha_inicio || '';
             document.getElementById('programacionFechaFin').value = prog.fecha_fin || '';
             
-            // Convertir hora de formato 24h a 12h y establecer valores
+            // Establecer valores de hora en formato 24h
             if (prog.hora_inicio) {
-                const [horaI, minutoI, periodoI] = convertirA12Horas(prog.hora_inicio);
-                document.getElementById('programacionHoraInicioHora').value = horaI;
-                document.getElementById('programacionHoraInicioMinuto').value = minutoI;
-                document.getElementById('programacionHoraInicioPeriodo').value = periodoI;
+                document.getElementById('programacionHoraInicio').value = prog.hora_inicio;
             }
             if (prog.hora_fin) {
-                const [horaF, minutoF, periodoF] = convertirA12Horas(prog.hora_fin);
-                document.getElementById('programacionHoraFinHora').value = horaF;
-                document.getElementById('programacionHoraFinMinuto').value = minutoF;
-                document.getElementById('programacionHoraFinPeriodo').value = periodoF;
+                document.getElementById('programacionHoraFin').value = prog.hora_fin;
             }
             
             document.getElementById('programacionEstado').value = prog.estado;
@@ -4677,12 +4612,8 @@
             const campos = [
                 'programacionFechaInicio',
                 'programacionFechaFin',
-                'programacionHoraInicioHora',
-                'programacionHoraInicioMinuto',
-                'programacionHoraInicioPeriodo',
-                'programacionHoraFinHora',
-                'programacionHoraFinMinuto',
-                'programacionHoraFinPeriodo'
+                'programacionHoraInicio',
+                'programacionHoraFin'
             ];
             
             // Remover listeners anteriores para evitar duplicados
@@ -4714,13 +4645,8 @@
             const fechaInicio = document.getElementById('programacionFechaInicio').value;
             const fechaFin = document.getElementById('programacionFechaFin').value;
             
-            const horaInicioHora = document.getElementById('programacionHoraInicioHora').value;
-            const horaInicioMinuto = document.getElementById('programacionHoraInicioMinuto').value;
-            const horaInicioPeriodo = document.getElementById('programacionHoraInicioPeriodo').value;
-            
-            const horaFinHora = document.getElementById('programacionHoraFinHora').value;
-            const horaFinMinuto = document.getElementById('programacionHoraFinMinuto').value;
-            const horaFinPeriodo = document.getElementById('programacionHoraFinPeriodo').value;
+            const horaInicio = document.getElementById('programacionHoraInicio').value;
+            const horaFin = document.getElementById('programacionHoraFin').value;
             
             // Validar que todos los campos necesarios estén completos
             if (!fechaInicio || !fechaFin) {
@@ -4757,15 +4683,8 @@
             
             // Si hay horarios completos, calcular horas hábiles
             let horasInfo = null;
-            if (horaInicioHora && horaInicioMinuto && horaInicioPeriodo && 
-                horaFinHora && horaFinMinuto && horaFinPeriodo) {
-                
-                const horaInicio = convertirA24Horas(horaInicioHora, horaInicioMinuto, horaInicioPeriodo);
-                const horaFin = convertirA24Horas(horaFinHora, horaFinMinuto, horaFinPeriodo);
-                
-                if (horaInicio && horaFin && horaFin > horaInicio) {
-                    horasInfo = calcularHorasHabiles(fechaInicio, fechaFin, horaInicio, horaFin);
-                }
+            if (horaInicio && horaFin && horaFin > horaInicio) {
+                horasInfo = calcularHorasHabiles(fechaInicio, fechaFin, horaInicio, horaFin);
             }
             
             // Mostrar resultados
