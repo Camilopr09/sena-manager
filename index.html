@@ -13,6 +13,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- Lucide Icons - Estilo Apple SF Symbols -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Calculadora de Días Hábiles Colombia 2026 -->
+    <script src="./dias-habiles-colombia.js"></script>
     <!-- Eliminamos EmailJS completamente -->
     <style>
         :root {
@@ -4402,6 +4404,10 @@
                                 ${ESTADOS_PROGRAMACION.map(e => `<option value="${e}">${e}</option>`).join('')}
                             </select>
                         </div>
+                        
+                        <!-- Calculadora de Días Hábiles -->
+                        <div id="calculadoraDiasHabiles" style="margin-top: 16px;"></div>
+                        
                         <input type="hidden" id="programacionId">
                     </form>
                 </div>
@@ -4617,6 +4623,9 @@
             document.getElementById('programacionForm').reset();
             document.getElementById('programacionId').value = '';
             document.getElementById('programacionModal').classList.add('active');
+            
+            // Configurar event listeners para calculadora de días hábiles
+            configurarCalculadoraDiasHabiles();
         }
 
         function closeProgramacionModal() {
@@ -4653,6 +4662,127 @@
             
             document.getElementById('programacionEstado').value = prog.estado;
             document.getElementById('programacionModal').classList.add('active');
+            
+            // Configurar event listeners y actualizar calculadora
+            configurarCalculadoraDiasHabiles();
+            actualizarCalculoDiasHabiles();
+        }
+
+        // ========== CALCULADORA DE DÍAS HÁBILES ==========
+        
+        /**
+         * Configura event listeners para actualizar el cálculo automáticamente
+         */
+        function configurarCalculadoraDiasHabiles() {
+            const campos = [
+                'programacionFechaInicio',
+                'programacionFechaFin',
+                'programacionHoraInicioHora',
+                'programacionHoraInicioMinuto',
+                'programacionHoraInicioPeriodo',
+                'programacionHoraFinHora',
+                'programacionHoraFinMinuto',
+                'programacionHoraFinPeriodo'
+            ];
+            
+            // Remover listeners anteriores para evitar duplicados
+            campos.forEach(id => {
+                const elemento = document.getElementById(id);
+                if (elemento) {
+                    // Clonar elemento para remover todos los event listeners
+                    const nuevoElemento = elemento.cloneNode(true);
+                    elemento.parentNode.replaceChild(nuevoElemento, elemento);
+                }
+            });
+            
+            // Agregar nuevos listeners
+            campos.forEach(id => {
+                const elemento = document.getElementById(id);
+                if (elemento) {
+                    elemento.addEventListener('change', actualizarCalculoDiasHabiles);
+                }
+            });
+        }
+        
+        /**
+         * Actualiza el cálculo de días y horas hábiles en el modal
+         */
+        function actualizarCalculoDiasHabiles() {
+            const container = document.getElementById('calculadoraDiasHabiles');
+            if (!container) return;
+            
+            const fechaInicio = document.getElementById('programacionFechaInicio').value;
+            const fechaFin = document.getElementById('programacionFechaFin').value;
+            
+            const horaInicioHora = document.getElementById('programacionHoraInicioHora').value;
+            const horaInicioMinuto = document.getElementById('programacionHoraInicioMinuto').value;
+            const horaInicioPeriodo = document.getElementById('programacionHoraInicioPeriodo').value;
+            
+            const horaFinHora = document.getElementById('programacionHoraFinHora').value;
+            const horaFinMinuto = document.getElementById('programacionHoraFinMinuto').value;
+            const horaFinPeriodo = document.getElementById('programacionHoraFinPeriodo').value;
+            
+            // Validar que todos los campos necesarios estén completos
+            if (!fechaInicio || !fechaFin) {
+                container.innerHTML = `
+                    <div style="background: var(--bg-light); padding: 16px; border-radius: 8px; text-align: center; color: var(--text-secondary);">
+                        <i data-lucide="calendar" style="width: 24px; height: 24px; margin-bottom: 8px;"></i>
+                        <p style="margin: 0; font-size: 13px;">Selecciona las fechas para calcular los días hábiles</p>
+                    </div>
+                `;
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+                return;
+            }
+            
+            // Validar que la fecha de fin sea posterior a la de inicio
+            if (new Date(fechaFin) <= new Date(fechaInicio)) {
+                container.innerHTML = `
+                    <div style="background: #FFF3CD; padding: 16px; border-radius: 8px; border-left: 4px solid var(--sena-orange);">
+                        <div style="display: flex; align-items: center; gap: 8px; color: #856404;">
+                            <i data-lucide="alert-triangle" style="width: 20px; height: 20px;"></i>
+                            <span style="font-size: 13px; font-weight: 500;">La fecha de fin debe ser posterior a la fecha de inicio</span>
+                        </div>
+                    </div>
+                `;
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+                return;
+            }
+            
+            // Calcular días hábiles
+            const detalle = obtenerDetalleCalculo(fechaInicio, fechaFin);
+            
+            // Si hay horarios completos, calcular horas hábiles
+            let horasInfo = null;
+            if (horaInicioHora && horaInicioMinuto && horaInicioPeriodo && 
+                horaFinHora && horaFinMinuto && horaFinPeriodo) {
+                
+                const horaInicio = convertirA24Horas(horaInicioHora, horaInicioMinuto, horaInicioPeriodo);
+                const horaFin = convertirA24Horas(horaFinHora, horaFinMinuto, horaFinPeriodo);
+                
+                if (horaInicio && horaFin && horaFin > horaInicio) {
+                    horasInfo = calcularHorasHabiles(fechaInicio, fechaFin, horaInicio, horaFin);
+                }
+            }
+            
+            // Mostrar resultados
+            container.innerHTML = formatearInfoCalculo(detalle, horasInfo);
+            
+            // Actualizar automáticamente el campo de horas si está disponible
+            if (horasInfo && horasInfo.totalHoras > 0) {
+                const campoHoras = document.getElementById('programacionHoras');
+                if (campoHoras && (!campoHoras.value || confirm('¿Deseas actualizar el campo de horas con el cálculo automático de ' + horasInfo.totalHoras + ' horas?'))) {
+                    campoHoras.value = Math.round(horasInfo.totalHoras);
+                }
+            }
+            
+            // Re-inicializar iconos de Lucide
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
         }
 
         // REPORTES
