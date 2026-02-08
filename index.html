@@ -4339,12 +4339,78 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Hora Inicio *</label>
-                            <input type="time" id="programacionHoraInicio" class="form-control" required>
+                            <div style="display: flex; gap: 8px;">
+                                <select id="programacionHoraInicioHora" class="form-control" required style="flex: 1;">
+                                    <option value="">Hora</option>
+                                    <option value="00">00</option>
+                                    <option value="01">01</option>
+                                    <option value="02">02</option>
+                                    <option value="03">03</option>
+                                    <option value="04">04</option>
+                                    <option value="05">05</option>
+                                    <option value="06">06</option>
+                                    <option value="07">07</option>
+                                    <option value="08">08</option>
+                                    <option value="09">09</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                    <option value="17">17</option>
+                                    <option value="18">18</option>
+                                    <option value="19">19</option>
+                                    <option value="20">20</option>
+                                    <option value="21">21</option>
+                                    <option value="22">22</option>
+                                    <option value="23">23</option>
+                                </select>
+                                <select id="programacionHoraInicioMinuto" class="form-control" required style="flex: 1;">
+                                    <option value="">Minuto</option>
+                                    <option value="00">:00</option>
+                                    <option value="30">:30</option>
+                                </select>
+                            </div>
                             <small style="color: var(--sena-gray); margin-top: 4px; display: block;">Formato 24 horas (ej: 08:00, 14:30)</small>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Hora Fin *</label>
-                            <input type="time" id="programacionHoraFin" class="form-control" required>
+                            <div style="display: flex; gap: 8px;">
+                                <select id="programacionHoraFinHora" class="form-control" required style="flex: 1;">
+                                    <option value="">Hora</option>
+                                    <option value="00">00</option>
+                                    <option value="01">01</option>
+                                    <option value="02">02</option>
+                                    <option value="03">03</option>
+                                    <option value="04">04</option>
+                                    <option value="05">05</option>
+                                    <option value="06">06</option>
+                                    <option value="07">07</option>
+                                    <option value="08">08</option>
+                                    <option value="09">09</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                    <option value="17">17</option>
+                                    <option value="18">18</option>
+                                    <option value="19">19</option>
+                                    <option value="20">20</option>
+                                    <option value="21">21</option>
+                                    <option value="22">22</option>
+                                    <option value="23">23</option>
+                                </select>
+                                <select id="programacionHoraFinMinuto" class="form-control" required style="flex: 1;">
+                                    <option value="">Minuto</option>
+                                    <option value="00">:00</option>
+                                    <option value="30">:30</option>
+                                </select>
+                            </div>
                             <small style="color: var(--sena-gray); margin-top: 4px; display: block;">Formato 24 horas (ej: 12:00, 18:30)</small>
                         </div>
                         <div class="form-group">
@@ -4388,9 +4454,15 @@
             const fechaInicio = document.getElementById('programacionFechaInicio').value;
             const fechaFin = document.getElementById('programacionFechaFin').value;
             
-            // Obtener valores de hora en formato 24h
-            const horaInicio = document.getElementById('programacionHoraInicio').value;
-            const horaFin = document.getElementById('programacionHoraFin').value;
+            // Obtener valores de hora y minuto en formato 24h
+            const horaInicioHora = document.getElementById('programacionHoraInicioHora').value;
+            const horaInicioMinuto = document.getElementById('programacionHoraInicioMinuto').value;
+            const horaFinHora = document.getElementById('programacionHoraFinHora').value;
+            const horaFinMinuto = document.getElementById('programacionHoraFinMinuto').value;
+            
+            // Construir hora completa en formato HH:MM
+            const horaInicio = horaInicioHora && horaInicioMinuto ? `${horaInicioHora}:${horaInicioMinuto}` : '';
+            const horaFin = horaFinHora && horaFinMinuto ? `${horaFinHora}:${horaFinMinuto}` : '';
             
             const estado = document.getElementById('programacionEstado').value;
 
@@ -4587,12 +4659,16 @@
             document.getElementById('programacionFechaInicio').value = prog.fecha_inicio || '';
             document.getElementById('programacionFechaFin').value = prog.fecha_fin || '';
             
-            // Establecer valores de hora en formato 24h
+            // Separar y establecer hora y minuto en formato 24h
             if (prog.hora_inicio) {
-                document.getElementById('programacionHoraInicio').value = prog.hora_inicio;
+                const [hora, minuto] = prog.hora_inicio.split(':');
+                document.getElementById('programacionHoraInicioHora').value = hora;
+                document.getElementById('programacionHoraInicioMinuto').value = minuto;
             }
             if (prog.hora_fin) {
-                document.getElementById('programacionHoraFin').value = prog.hora_fin;
+                const [hora, minuto] = prog.hora_fin.split(':');
+                document.getElementById('programacionHoraFinHora').value = hora;
+                document.getElementById('programacionHoraFinMinuto').value = minuto;
             }
             
             document.getElementById('programacionEstado').value = prog.estado;
@@ -4612,8 +4688,10 @@
             const campos = [
                 'programacionFechaInicio',
                 'programacionFechaFin',
-                'programacionHoraInicio',
-                'programacionHoraFin'
+                'programacionHoraInicioHora',
+                'programacionHoraInicioMinuto',
+                'programacionHoraFinHora',
+                'programacionHoraFinMinuto'
             ];
             
             // Remover listeners anteriores para evitar duplicados
@@ -4645,8 +4723,14 @@
             const fechaInicio = document.getElementById('programacionFechaInicio').value;
             const fechaFin = document.getElementById('programacionFechaFin').value;
             
-            const horaInicio = document.getElementById('programacionHoraInicio').value;
-            const horaFin = document.getElementById('programacionHoraFin').value;
+            const horaInicioHora = document.getElementById('programacionHoraInicioHora').value;
+            const horaInicioMinuto = document.getElementById('programacionHoraInicioMinuto').value;
+            const horaFinHora = document.getElementById('programacionHoraFinHora').value;
+            const horaFinMinuto = document.getElementById('programacionHoraFinMinuto').value;
+            
+            // Construir hora completa
+            const horaInicio = horaInicioHora && horaInicioMinuto ? `${horaInicioHora}:${horaInicioMinuto}` : '';
+            const horaFin = horaFinHora && horaFinMinuto ? `${horaFinHora}:${horaFinMinuto}` : '';
             
             // Validar que todos los campos necesarios estén completos
             if (!fechaInicio || !fechaFin) {
