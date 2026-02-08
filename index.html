@@ -251,6 +251,31 @@
             background: #0d1117;
         }
         
+        /* Autocompletado en modo oscuro */
+        body.dark-mode .autocomplete-items {
+            background: #161b22;
+            border-color: #30363d;
+        }
+        
+        body.dark-mode .autocomplete-items div {
+            color: #e6edf3;
+            border-bottom-color: #30363d;
+        }
+        
+        body.dark-mode .autocomplete-items div:hover,
+        body.dark-mode .autocomplete-items div.autocomplete-active {
+            background-color: #2a4229;
+            color: #a0e09f;
+        }
+        
+        body.dark-mode .autocomplete-items div strong {
+            color: #7bc87a;
+        }
+        
+        body.dark-mode .autocomplete-items .no-results {
+            color: #8b949e;
+        }
+        
         body.dark-mode .error-message {
             background: linear-gradient(135deg, #2d1a1a 0%, #3d2020 100%);
             color: #ff6b6b;
@@ -1128,6 +1153,57 @@
         
         select.form-control {
             min-width: 220px;
+        }
+        
+        /* Autocompletado de Fichas */
+        .autocomplete-container {
+            position: relative;
+            width: 100%;
+        }
+        
+        .autocomplete-items {
+            position: absolute;
+            border: 1px solid var(--border-color);
+            border-top: none;
+            z-index: 99;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            background: var(--bg-white);
+            box-shadow: var(--shadow-md);
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .autocomplete-items div {
+            padding: 12px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+            color: var(--text-dark);
+        }
+        
+        .autocomplete-items div:hover,
+        .autocomplete-items div.autocomplete-active {
+            background-color: var(--primary-50);
+            color: var(--primary-800);
+        }
+        
+        .autocomplete-items div strong {
+            color: var(--primary-700);
+            font-weight: 600;
+        }
+        
+        .autocomplete-items .no-results {
+            padding: 16px;
+            text-align: center;
+            color: var(--text-secondary);
+            cursor: default;
+        }
+        
+        .autocomplete-items .no-results:hover {
+            background-color: transparent;
         }
         
         /* Tabs */
@@ -4300,10 +4376,20 @@
                     <form id="programacionForm" onsubmit="saveProgramacion(event)">
                         <div class="form-group">
                             <label class="form-label">Ficha *</label>
-                            <select id="programacionFicha" class="form-control" required onchange="updateCompetenciasSelect()">
-                                <option value="">Seleccionar ficha</option>
-                                ${fichas.map(f => `<option value="${f.id}">${f.codigo}</option>`).join('')}
-                            </select>
+                            <div class="autocomplete-container">
+                                <input 
+                                    type="text" 
+                                    id="programacionFichaInput" 
+                                    class="form-control" 
+                                    placeholder="Ingresa el código de la ficha..." 
+                                    autocomplete="off"
+                                    oninput="filtrarFichas(this.value)"
+                                    onfocus="filtrarFichas(this.value)"
+                                    required
+                                >
+                                <div id="autocomplete-list" class="autocomplete-items" style="display: none;"></div>
+                            </div>
+                            <input type="hidden" id="programacionFicha" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label">Competencia *</label>
@@ -4441,6 +4527,180 @@
             const compsDeFicha = competencias.filter(c => c.ficha_id === fichaId);
             compSelect.innerHTML = '<option value="">Seleccionar competencia</option>' +
                 compsDeFicha.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+        }
+
+        // ========== AUTOCOMPLETADO DE FICHAS ==========
+        
+        /**
+         * Ordena fichas por código numérico
+         */
+        function ordenarFichasPorCodigo() {
+            fichas.sort((a, b) => {
+                // Extraer números del código
+                const numA = parseInt(a.codigo.replace(/\D/g, '')) || 0;
+                const numB = parseInt(b.codigo.replace(/\D/g, '')) || 0;
+                return numA - numB;
+            });
+        }
+        
+        /**
+         * Filtra y muestra fichas que coinciden con el texto ingresado
+         */
+        function filtrarFichas(texto) {
+            const autocompleteList = document.getElementById('autocomplete-list');
+            const input = document.getElementById('programacionFichaInput');
+            
+            // Cerrar todas las listas existentes
+            cerrarTodasLasListas();
+            
+            if (!texto || texto.length < 1) {
+                // Mostrar todas las fichas si el input está vacío pero tiene foco
+                if (document.activeElement === input) {
+                    mostrarSugerenciasFichas('');
+                }
+                return;
+            }
+            
+            mostrarSugerenciasFichas(texto);
+        }
+        
+        /**
+         * Muestra las sugerencias de fichas filtradas
+         */
+        function mostrarSugerenciasFichas(texto) {
+            const autocompleteList = document.getElementById('autocomplete-list');
+            
+            // Ordenar fichas antes de mostrar
+            ordenarFichasPorCodigo();
+            
+            // Filtrar fichas que coincidan con el texto
+            const fichasFiltradas = fichas.filter(f => {
+                const codigo = (f.codigo || '').toLowerCase();
+                const nombre = (f.nombre || '').toLowerCase();
+                const busqueda = texto.toLowerCase();
+                return codigo.includes(busqueda) || nombre.includes(busqueda);
+            });
+            
+            if (fichasFiltradas.length === 0) {
+                autocompleteList.innerHTML = '<div class="no-results">No se encontraron fichas</div>';
+                autocompleteList.style.display = 'block';
+                return;
+            }
+            
+            // Mostrar máximo 10 resultados
+            const fichasAMostrar = fichasFiltradas.slice(0, 10);
+            
+            autocompleteList.innerHTML = '';
+            fichasAMostrar.forEach(ficha => {
+                const div = document.createElement('div');
+                
+                // Resaltar la parte que coincide
+                const codigo = ficha.codigo || '';
+                const nombre = ficha.nombre || '';
+                const busqueda = texto;
+                
+                let codigoHTML = codigo;
+                let nombreHTML = nombre;
+                
+                if (busqueda) {
+                    const regex = new RegExp(`(${busqueda})`, 'gi');
+                    codigoHTML = codigo.replace(regex, '<strong>$1</strong>');
+                    nombreHTML = nombre.replace(regex, '<strong>$1</strong>');
+                }
+                
+                div.innerHTML = `<strong>${codigoHTML}</strong> - ${nombreHTML}`;
+                div.dataset.fichaId = ficha.id;
+                div.dataset.fichaCodigo = ficha.codigo;
+                
+                div.addEventListener('click', function() {
+                    seleccionarFicha(ficha.id, ficha.codigo);
+                });
+                
+                autocompleteList.appendChild(div);
+            });
+            
+            autocompleteList.style.display = 'block';
+        }
+        
+        /**
+         * Selecciona una ficha del autocompletado
+         */
+        function seleccionarFicha(fichaId, fichaCodigo) {
+            document.getElementById('programacionFichaInput').value = fichaCodigo;
+            document.getElementById('programacionFicha').value = fichaId;
+            cerrarTodasLasListas();
+            updateCompetenciasSelect();
+        }
+        
+        /**
+         * Cierra todas las listas de autocompletado
+         */
+        function cerrarTodasLasListas(elemento) {
+            const items = document.getElementsByClassName('autocomplete-items');
+            for (let i = 0; i < items.length; i++) {
+                if (elemento !== items[i] && elemento !== document.getElementById('programacionFichaInput')) {
+                    items[i].style.display = 'none';
+                }
+            }
+        }
+        
+        // Cerrar autocompletado al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (e.target.id !== 'programacionFichaInput') {
+                cerrarTodasLasListas(e.target);
+            }
+        });
+        
+        // Manejar navegación con teclado en el autocompletado
+        document.addEventListener('keydown', function(e) {
+            const input = document.getElementById('programacionFichaInput');
+            if (!input || document.activeElement !== input) return;
+            
+            const autocompleteList = document.getElementById('autocomplete-list');
+            if (!autocompleteList || autocompleteList.style.display === 'none') return;
+            
+            let items = autocompleteList.getElementsByTagName('div');
+            let currentFocus = -1;
+            
+            // Encontrar el item activo actual
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].classList.contains('autocomplete-active')) {
+                    currentFocus = i;
+                    break;
+                }
+            }
+            
+            if (e.keyCode === 40) { // Flecha abajo
+                e.preventDefault();
+                currentFocus++;
+                addActive(items, currentFocus);
+            } else if (e.keyCode === 38) { // Flecha arriba
+                e.preventDefault();
+                currentFocus--;
+                addActive(items, currentFocus);
+            } else if (e.keyCode === 13) { // Enter
+                e.preventDefault();
+                if (currentFocus > -1 && items[currentFocus]) {
+                    items[currentFocus].click();
+                }
+            } else if (e.keyCode === 27) { // Escape
+                cerrarTodasLasListas();
+            }
+        });
+        
+        function addActive(items, currentFocus) {
+            if (!items || items.length === 0) return false;
+            removeActive(items);
+            if (currentFocus >= items.length) currentFocus = 0;
+            if (currentFocus < 0) currentFocus = items.length - 1;
+            items[currentFocus].classList.add('autocomplete-active');
+            items[currentFocus].scrollIntoView({ block: 'nearest' });
+        }
+        
+        function removeActive(items) {
+            for (let i = 0; i < items.length; i++) {
+                items[i].classList.remove('autocomplete-active');
+            }
         }
 
         async function saveProgramacion(event) {
@@ -4635,6 +4895,9 @@
             document.getElementById('programacionModalTitle').textContent = 'Nueva Programación';
             document.getElementById('programacionForm').reset();
             document.getElementById('programacionId').value = '';
+            document.getElementById('programacionFichaInput').value = '';
+            document.getElementById('programacionFicha').value = '';
+            cerrarTodasLasListas();
             document.getElementById('programacionModal').classList.add('active');
             
             // Configurar event listeners para calculadora de días hábiles
@@ -4643,6 +4906,7 @@
 
         function closeProgramacionModal() {
             document.getElementById('programacionModal').classList.remove('active');
+            cerrarTodasLasListas();
         }
 
         function editProgramacion(id) {
@@ -4650,7 +4914,15 @@
             if (!prog) return;
             document.getElementById('programacionModalTitle').textContent = 'Editar Programación';
             document.getElementById('programacionId').value = prog.id;
-            document.getElementById('programacionFicha').value = prog.ficha_id;
+            
+            // Establecer ficha en el autocompletado
+            const ficha = fichas.find(f => f.id === prog.ficha_id);
+            if (ficha) {
+                document.getElementById('programacionFichaInput').value = ficha.codigo;
+                document.getElementById('programacionFicha').value = ficha.id;
+            }
+            cerrarTodasLasListas();
+            
             updateCompetenciasSelect();
             document.getElementById('programacionCompetencia').value = prog.competencia_id;
             document.getElementById('programacionInstructor').value = prog.instructor_id;
