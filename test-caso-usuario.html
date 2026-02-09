@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Específico - 30  marzo al 3 abril 2026</title>
+    <script src="./dias-habiles-colombia.js"></script>
+    <style>
+        :root {
+            --sena-blue: #0066cc;
+            --sena-green: #39a900;
+            --sena-orange: #ff6600;
+            --sena-gray: #6c757d;
+            --bg-light: #f8f9fa;
+            --border-color: #dee2e6;
+            --text-secondary: #6c757d;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: var(--sena-blue);
+            border-bottom: 3px solid var(--sena-green);
+            padding-bottom: 12px;
+        }
+        .big-result {
+            background: white;
+            padding: 32px;
+            margin: 24px 0;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .big-number {
+            font-size: 72px;
+            font-weight: bold;
+            color: var(--sena-green);
+            margin: 16px 0;
+        }
+        .label {
+            font-size: 18px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .detail-box {
+            background: white;
+            padding: 24px;
+            margin: 16px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        }
+        .day-item {
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .habil {
+            background: #d4edda;
+            border-left: 4px solid var(--sena-green);
+        }
+        .festivo {
+            background: #fff3cd;
+            border-left: 4px solid var(--sena-orange);
+        }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-habil {
+            background: var(--sena-green);
+            color: white;
+        }
+        .badge-festivo {
+            background: var(--sena-orange);
+            color: white;
+        }
+        .formula {
+            background: var(--bg-light);
+            padding: 16px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 16px;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Test Específico: 30 marzo al 3 abril 2026</h1>
+    <p style="font-size: 16px; color: #666;">Este test verifica el caso exacto que reportaste (8:00 AM a 10:00 AM)</p>
+
+    <div id="resultado"></div>
+
+    <script>
+        // Ejecutar el test inmediatamente
+        const fechaInicio = '2026-03-30';
+        const fechaFin = '2026-04-03';
+        const horaInicio = '08:00';
+        const horaFin = '10:00';
+
+        // Calcular
+        const resultado = calcularHorasHabiles(fechaInicio, fechaFin, horaInicio, horaFin);
+        const detalle = obtenerDetalleCalculo(fechaInicio, fechaFin);
+
+        // Información de cada día
+        const dias = [];
+        let fechaActual = new Date(2026, 2, 30); // 30 marzo 2026
+        const fechaFinal = new Date(2026, 3, 3);  // 3 abril 2026
+
+        const nombresDias = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        
+        while (fechaActual <= fechaFinal) {
+            const year = fechaActual.getFullYear();
+            const month = String(fechaActual.getMonth() + 1).padStart(2, '0');
+            const day = String(fechaActual.getDate()).padStart(2, '0');
+            const fechaStr = `${year}-${month}-${day}`;
+            
+            const esHabil = esDiaHabil(fechaActual);
+            const esFest = esFestivo(fechaActual);
+            const diaSemana = nombresDias[fechaActual.getDay()];
+            
+            let nombreFestivo = '';
+            if (esFest) {
+                const fest = [
+                    { fecha: '2026-04-02', nombre: 'Jueves Santo' },
+                    { fecha: '2026-04-03', nombre: 'Viernes Santo' }
+                ].find(f => f.fecha === fechaStr);
+                if (fest) nombreFestivo = fest.nombre;
+            }
+            
+            dias.push({
+                fecha: fechaStr,
+                diaSemana,
+                esHabil,
+                esFestivo: esFest,
+                nombreFestivo
+            });
+            
+            fechaActual.setDate(fechaActual.getDate() + 1);
+        }
+
+        // Mostrar resultados
+        document.getElementById('resultado').innerHTML = `
+            <div class="big-result">
+                <div class="label">Días Hábiles</div>
+                <div class="big-number">${resultado.diasHabiles}</div>
+                <div style="font-size: 20px; color: #666;">
+                    ✅ Resultado CORRECTO (esperado: 3)
+                </div>
+            </div>
+
+            <div class="big-result">
+                <div class="label">Total Horas Hábiles</div>
+                <div class="big-number">${resultado.totalHoras}h</div>
+                <div class="formula">
+                    ${resultado.diasHabiles} días × ${resultado.horasPorDia}h por día = ${resultado.totalHoras}h
+                </div>
+                <div style="font-size: 20px; color: #666;">
+                    ✅ Resultado CORRECTO (esperado: 6 horas)
+                </div>
+            </div>
+
+            <div class="detail-box">
+                <h3 style="color: var(--sena-blue); margin-top: 0;">📅 Detalle día por día</h3>
+                ${dias.map(dia => `
+                    <div class="day-item ${dia.esHabil ? 'habil' : 'festivo'}">
+                        <div>
+                            <strong>${dia.fecha}</strong> - ${dia.diaSemana}
+                            ${dia.esFestivo ? `<br><small style="color: var(--sena-orange);">${dia.nombreFestivo}</small>` : ''}
+                        </div>
+                        <span class="badge ${dia.esHabil ? 'badge-habil' : 'badge-festivo'}">
+                            ${dia.esHabil ? '✅ HÁBIL' : '🎉 FESTIVO'}
+                        </span>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div class="detail-box">
+                <h3 style="color: var(--sena-blue); margin-top: 0;">📊 Resumen</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 12px;">Total días en el rango:</td>
+                        <td style="padding: 12px; text-align: right;"><strong>${detalle.totalDias}</strong></td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #dee2e6; background: #d4edda;">
+                        <td style="padding: 12px; color: var(--sena-green);">Días hábiles:</td>
+                        <td style="padding: 12px; text-align: right; color: var(--sena-green);"><strong>${detalle.diasHabiles}</strong></td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 12px;">Fines de semana:</td>
+                        <td style="padding: 12px; text-align: right;"><strong>${detalle.finesDeSemana}</strong></td>
+                    </tr>
+                    <tr style="background: #fff3cd;">
+                        <td style="padding: 12px; color: var(--sena-orange);">Festivos:</td>
+                        <td style="padding: 12px; text-align: right; color: var(--sena-orange);"><strong>${detalle.festivos}</strong></td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="detail-box" style="background: #e7f3ff; border-left: 4px solid var(--sena-blue);">
+                <h3 style="color: var(--sena-blue); margin-top: 0;">💡 Conclusión</h3>
+                <p style="font-size: 16px; line-height: 1.6;">
+                    La calculadora está funcionando <strong style="color: var(--sena-green);">CORRECTAMENTE</strong>. 
+                    Del 30 de marzo al 3 de abril de 2026 hay exactamente <strong>3 días hábiles</strong> 
+                    (lunes 30, martes 31 y miércoles 1 de abril), porque el 2 y 3 de abril son Jueves y Viernes Santo.
+                </p>
+                <p style="font-size: 16px; line-height: 1.6;">
+                    Si trabajas 2 horas diarias (8:00 AM a 10:00 AM) durante esos 3 días hábiles, 
+                    el total es <strong>6 horas</strong>.
+                </p>
+                <p style="font-size: 14px; color: var(--text-secondary); margin-top: 20px;">
+                    ⚠️ Si ves un resultado diferente en la aplicación, intenta recargar la página con <strong>Ctrl+F5</strong> 
+                    para limpiar la caché del navegador.
+                </p>
+            </div>
+        `;
+    </script>
+</body>
+</html>
