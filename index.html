@@ -4967,15 +4967,27 @@
             ];
             
             // Remover listeners anteriores para evitar duplicados
+            // Guardar valores actuales para restaurarlos después de clonar
+            const valores = {};
+            campos.forEach(id => {
+                const elemento = document.getElementById(id);
+                if (elemento) valores[id] = elemento.value;
+            });
+
+            // Reemplazar elementos (clonar) y restaurar valores
             campos.forEach(id => {
                 const elemento = document.getElementById(id);
                 if (elemento) {
-                    // Clonar elemento para remover todos los event listeners
                     const nuevoElemento = elemento.cloneNode(true);
                     elemento.parentNode.replaceChild(nuevoElemento, elemento);
+                    if (valores[id] !== undefined) {
+                        try {
+                            nuevoElemento.value = valores[id];
+                        } catch (e) {}
+                    }
                 }
             });
-            
+
             // Agregar nuevos listeners
             campos.forEach(id => {
                 const elemento = document.getElementById(id);
