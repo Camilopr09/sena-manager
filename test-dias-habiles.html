@@ -42,11 +42,11 @@
             <div>
                 <strong>Días de clase (marca los días con clase):</strong>
                 <div style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;">
-                    <label><input type="checkbox" class="dia-clase" value="1"> Lun</label>
-                    <label><input type="checkbox" class="dia-clase" value="2"> Mar</label>
-                    <label><input type="checkbox" class="dia-clase" value="3"> Mié</label>
-                    <label><input type="checkbox" class="dia-clase" value="4"> Jue</label>
-                    <label><input type="checkbox" class="dia-clase" value="5"> Vie</label>
+                    <label><input type="checkbox" class="dia-clase" value="1" checked> Lun</label>
+                    <label><input type="checkbox" class="dia-clase" value="2" checked> Mar</label>
+                    <label><input type="checkbox" class="dia-clase" value="3" checked> Mié</label>
+                    <label><input type="checkbox" class="dia-clase" value="4" checked> Jue</label>
+                    <label><input type="checkbox" class="dia-clase" value="5" checked> Vie</label>
                     <label><input type="checkbox" class="dia-clase" value="6"> Sáb</label>
                     <label><input type="checkbox" class="dia-clase" value="0"> Dom</label>
                 </div>
@@ -172,11 +172,13 @@
             return boxes.filter(b => b.checked).map(b => Number(b.value));
         }
 
-        document.getElementById('ui-calcular').addEventListener('click', () => {
-            const inicio = document.getElementById('ui-fecha-inicio').value;
-            const fin = document.getElementById('ui-fecha-fin').value;
-            const horaInicio = document.getElementById('ui-hora-inicio').value;
-            const horaFin = document.getElementById('ui-hora-fin').value;
+        function autoCalculate() {
+            const inicioEl = document.getElementById('ui-fecha-inicio');
+            const finEl = document.getElementById('ui-fecha-fin');
+            const horaInicioEl = document.getElementById('ui-hora-inicio');
+            const horaFinEl = document.getElementById('ui-hora-fin');
+            const inicio = inicioEl.value;
+            const fin = finEl.value;
             if (!inicio || !fin) {
                 document.getElementById('interactive-result').innerText = 'Selecciona fecha inicio y fin.';
                 return;
@@ -185,14 +187,42 @@
             const resultado = calcularDiasHabiles(inicio, fin, dias.length ? dias : null);
             const detalle = obtenerDetalleCalculo(inicio, fin, dias.length ? dias : null);
             let horasInfo = null;
-            if (horaInicio && horaFin) {
-                horasInfo = calcularHorasHabiles(inicio, fin, horaInicio, horaFin, dias.length ? dias : null);
+            if (horaInicioEl.value && horaFinEl.value) {
+                horasInfo = calcularHorasHabiles(inicio, fin, horaInicioEl.value, horaFinEl.value, dias.length ? dias : null);
             }
             document.getElementById('interactive-result').innerHTML = `
                 <div><strong>Días hábiles contados:</strong> ${resultado}</div>
                 ${formatearInfoCalculo(detalle, horasInfo)}
             `;
+        }
+
+        // Valores por defecto para las fechas: hoy y +7 días
+        (function setDefaultDates() {
+            const inicioEl = document.getElementById('ui-fecha-inicio');
+            const finEl = document.getElementById('ui-fecha-fin');
+            const today = new Date();
+            const later = new Date();
+            later.setDate(today.getDate() + 7);
+            function toInput(d) {
+                const y = d.getFullYear();
+                const m = String(d.getMonth()+1).padStart(2,'0');
+                const day = String(d.getDate()).padStart(2,'0');
+                return `${y}-${m}-${day}`;
+            }
+            if (!inicioEl.value) inicioEl.value = toInput(today);
+            if (!finEl.value) finEl.value = toInput(later);
+        })();
+
+        // Eventos: recalcular al cambiar inputs
+        document.getElementById('ui-calcular').addEventListener('click', autoCalculate);
+        Array.from(document.querySelectorAll('.dia-clase')).forEach(cb => cb.addEventListener('change', autoCalculate));
+        ['ui-fecha-inicio','ui-fecha-fin','ui-hora-inicio','ui-hora-fin'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', autoCalculate);
         });
+
+        // Cálculo inicial
+        autoCalculate();
     </script>
 </body>
 </html>
