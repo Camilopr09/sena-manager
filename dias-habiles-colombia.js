@@ -80,7 +80,20 @@ function esDiaHabil(fecha) {
  * @param {Date|string} fechaFin - Fecha de fin (Date o string YYYY-MM-DD)
  * @returns {number} - Número de días hábiles
  */
-function calcularDiasHabiles(fechaInicio, fechaFin) {
+/**
+ * Calcula el número de días hábiles entre dos fechas.
+ * Permite opcionalmente pasar los días de la semana en los que hay clase
+ * (por ejemplo [1,3,5] para Lunes, Miércoles, Viernes). Si se provee,
+ * sólo se contarán las fechas que caigan en esos días de la semana y que no
+ * sean festivos. Si no se provee, se mantiene el comportamiento original
+ * (no fines de semana y no festivos).
+ * @param {Date|string} fechaInicio
+ * @param {Date|string} fechaFin
+ * @param {number[]|string[]} [diasSemanaPermitidos] - Opcional: array de números 0-6 (0=Dom)
+ *        o nombres de días ('lunes','martes',...) en español.
+ * @returns {number}
+ */
+function calcularDiasHabiles(fechaInicio, fechaFin, diasSemanaPermitidos = null) {
     // Convertir strings a Date usando zona horaria local
     let inicio, fin;
     if (typeof fechaInicio === 'string') {
@@ -103,10 +116,38 @@ function calcularDiasHabiles(fechaInicio, fechaFin) {
     
     let diasHabiles = 0;
     const fechaActual = new Date(inicio);
+    let allowedSet = null;
+    if (diasSemanaPermitidos && Array.isArray(diasSemanaPermitidos)) {
+        // Normalizar a números 0-6 (0=Domingo)
+        const mapDias = {
+            domingo: 0, lunes: 1, martes: 2, miercoles: 3, miércoles: 3, jueves: 4, viernes: 5, sabado: 6, sábado: 6
+        };
+        allowedSet = new Set(diasSemanaPermitidos.map(d => {
+            if (typeof d === 'number') return d;
+            const key = String(d).toLowerCase();
+            return mapDias[key] !== undefined ? mapDias[key] : NaN;
+        }).filter(x => !Number.isNaN(x)));
+    }
     
     while (fechaActual <= fin) {
-        if (esDiaHabil(fechaActual)) {
+        const dia = fechaActual.getDay();
+        if (allowedSet) {
+            // Si el día de la semana no está en el horario, no cuenta
+            if (!allowedSet.has(dia)) {
+                fechaActual.setDate(fechaActual.getDate() + 1);
+                continue;
+            }
+            // Si está programado ese día pero es festivo, no cuenta
+            if (esFestivo(fechaActual)) {
+                fechaActual.setDate(fechaActual.getDate() + 1);
+                continue;
+            }
+            // Si está programado y no es festivo, cuenta (permitimos sábados si están en allowedSet)
             diasHabiles++;
+        } else {
+            if (esDiaHabil(fechaActual)) {
+                diasHabiles++;
+            }
         }
         fechaActual.setDate(fechaActual.getDate() + 1);
     }
@@ -122,9 +163,9 @@ function calcularDiasHabiles(fechaInicio, fechaFin) {
  * @param {string} horaFin - Hora de fin (HH:MM formato 24h)
  * @returns {Object} - { diasHabiles, horasPorDia, totalHoras }
  */
-function calcularHorasHabiles(fechaInicio, fechaFin, horaInicio, horaFin) {
-    // Calcular días hábiles
-    const diasHabiles = calcularDiasHabiles(fechaInicio, fechaFin);
+function calcularHorasHabiles(fechaInicio, fechaFin, horaInicio, horaFin, diasSemanaPermitidos = null) {
+    // Calcular días hábiles (respetando los días de semana permitidos si se proporcionan)
+    const diasHabiles = calcularDiasHabiles(fechaInicio, fechaFin, diasSemanaPermitidos);
     
     // Calcular horas por día
     const [horaInicioH, horaInicioM] = horaInicio.split(':').map(Number);
@@ -151,7 +192,7 @@ function calcularHorasHabiles(fechaInicio, fechaFin, horaInicio, horaFin) {
  * @param {string} fechaFin - Fecha de fin (YYYY-MM-DD)
  * @returns {Object} - Información detallada
  */
-function obtenerDetalleCalculo(fechaInicio, fechaFin) {
+function obtenerDetalleCalculo(fechaInicio, fechaFin, diasSemanaPermitidos = null) {
     // Convertir strings a Date usando zona horaria local
     const [yearI, monthI, dayI] = fechaInicio.split('-').map(Number);
     const inicio = new Date(yearI, monthI - 1, dayI);
@@ -164,16 +205,62 @@ function obtenerDetalleCalculo(fechaInicio, fechaFin) {
     let finesDeSemana = 0;
     let festivos = 0;
     const festivosEncontrados = [];
+    // Contadores para cuando se usan días de semana programados
+    let diasProgramadosTotal = 0;
+    let diasProgramadosHabiles = 0;
+    let tieneDiasProgramados = false;
+    let allowedSet = null;
+    if (diasSemanaPermitidos && Array.isArray(diasSemanaPermitidos)) {
+        const mapDias = {
+            domingo: 0, lunes: 1, martes: 2, miercoles: 3, miércoles: 3, jueves: 4, viernes: 5, sabado: 6, sábado: 6
+        };
+        allowedSet = new Set(diasSemanaPermitidos.map(d => {
+            if (typeof d === 'number') return d;
+            const key = String(d).toLowerCase();
+            return mapDias[key] !== undefined ? mapDias[key] : NaN;
+        }).filter(x => !Number.isNaN(x)));
+    }
     
     const fechaActual = new Date(inicio);
     
     while (fechaActual <= fin) {
         totalDias++;
-        
-        if (esFinDeSemana(fechaActual)) {
-            finesDeSemana++;
-        } else if (esFestivo(fechaActual)) {
-            festivos++;
+        const dia = fechaActual.getDay();
+
+        if (allowedSet) {
+            // Hay un horario con días de semana permitidos
+            tieneDiasProgramados = true;
+            if (allowedSet.has(dia)) {
+                diasProgramadosTotal++;
+                if (esFestivo(fechaActual)) {
+                    festivos++;
+                    // registrar festivo
+                    const year = fechaActual.getFullYear();
+                    const month = String(fechaActual.getMonth() + 1).padStart(2, '0');
+                    const day = String(fechaActual.getDate()).padStart(2, '0');
+                    const fechaStr = `${year}-${month}-${day}`;
+                    const festivoInfo = FESTIVOS_COLOMBIA_2026.find(f => f.fecha === fechaStr);
+                    if (festivoInfo) {
+                        festivosEncontrados.push({
+                            fecha: festivoInfo.fecha,
+                            nombre: festivoInfo.nombre,
+                            dia: fechaActual.toLocaleDateString('es-CO', { weekday: 'long' })
+                        });
+                    }
+                } else {
+                    // Programado y no festivo = día contado como hábil para la programación
+                    diasProgramadosHabiles++;
+                }
+            }
+            // También contabilizar fines de semana por separado si aplica
+            if (esFinDeSemana(fechaActual)) {
+                finesDeSemana++;
+            }
+        } else {
+            if (esFinDeSemana(fechaActual)) {
+                finesDeSemana++;
+            } else if (esFestivo(fechaActual)) {
+                festivos++;
             // Formatear fecha en zona horaria local
             const year = fechaActual.getFullYear();
             const month = String(fechaActual.getMonth() + 1).padStart(2, '0');
@@ -188,19 +275,30 @@ function obtenerDetalleCalculo(fechaInicio, fechaFin) {
                     dia: fechaActual.toLocaleDateString('es-CO', { weekday: 'long' })
                 });
             }
-        } else {
-            diasHabiles++;
+            } else {
+                diasHabiles++;
+            }
         }
         
         fechaActual.setDate(fechaActual.getDate() + 1);
     }
-    
+    // Si se usaron días programados, sobrescribimos 'diasHabiles' para representar
+    // los días que pertenecen al horario y no son festivos. Conservamos los otros
+    // contadores para información adicional.
+    if (tieneDiasProgramados) {
+        diasHabiles = diasProgramadosHabiles;
+    }
+
     return {
         totalDias,
         diasHabiles,
         finesDeSemana,
         festivos,
-        festivosEncontrados
+        festivosEncontrados,
+        // Info adicional cuando se usan días programados
+        tieneDiasProgramados,
+        diasProgramadosTotal,
+        diasProgramadosHabiles
     };
 }
 
@@ -254,6 +352,25 @@ function formatearInfoCalculo(detalle, horasInfo = null) {
             </div>
         `;
     }
+    
+        if (detalle.tieneDiasProgramados) {
+            html += `
+                <hr style="border: none; border-top: 1px solid var(--border-color); margin: 12px 0;">
+                <h4 style="margin: 0 0 8px 0; color: var(--sena-blue); font-size: 13px;">
+                    📅 Días programados en el horario
+                </h4>
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Días en el horario (total):</span>
+                        <strong>${detalle.diasProgramadosTotal}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; color: var(--sena-green);">
+                        <span>Días programados contados (no festivos):</span>
+                        <strong>${detalle.diasProgramadosHabiles}</strong>
+                    </div>
+                </div>
+            `;
+        }
     
     if (detalle.festivosEncontrados.length > 0) {
         html += `

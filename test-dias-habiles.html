@@ -32,6 +32,36 @@
     
     <div id="results"></div>
     
+    <div class="test-result" style="margin-top: 8px;">
+        <h3>🛠️ Calculadora interactiva (selecciona días de clase)</h3>
+        <div style="display: grid; gap:8px;">
+            <div>
+                <label><strong>Fecha inicio:</strong> <input type="date" id="ui-fecha-inicio"></label>
+                <label style="margin-left:12px;"><strong>Fecha fin:</strong> <input type="date" id="ui-fecha-fin"></label>
+            </div>
+            <div>
+                <strong>Días de clase (marca los días con clase):</strong>
+                <div style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;">
+                    <label><input type="checkbox" class="dia-clase" value="1"> Lun</label>
+                    <label><input type="checkbox" class="dia-clase" value="2"> Mar</label>
+                    <label><input type="checkbox" class="dia-clase" value="3"> Mié</label>
+                    <label><input type="checkbox" class="dia-clase" value="4"> Jue</label>
+                    <label><input type="checkbox" class="dia-clase" value="5"> Vie</label>
+                    <label><input type="checkbox" class="dia-clase" value="6"> Sáb</label>
+                    <label><input type="checkbox" class="dia-clase" value="0"> Dom</label>
+                </div>
+            </div>
+            <div>
+                <label><strong>Hora inicio:</strong> <input type="time" id="ui-hora-inicio" value="08:00"></label>
+                <label style="margin-left:12px;"><strong>Hora fin:</strong> <input type="time" id="ui-hora-fin" value="17:00"></label>
+            </div>
+            <div>
+                <button id="ui-calcular">Calcular días y horas hábiles</button>
+            </div>
+            <div id="interactive-result" class="detail"></div>
+        </div>
+    </div>
+    
     <script>
         function runTests() {
             const tests = [
@@ -76,6 +106,14 @@
                     fechaFin: '2026-02-09',
                     esperado: 1,
                     detalle: 'Lunes 9 de febrero = 1 día hábil'
+                },
+                {
+                    nombre: 'Horario: Lunes y Miércoles sólo',
+                    fechaInicio: '2026-02-09',
+                    fechaFin: '2026-02-15',
+                    diasSemana: [1,3], // Lunes=1, Miércoles=3
+                    esperado: 2,
+                    detalle: 'Clases sólo Lunes y Miércoles dentro de la semana = 2 días'
                 }
             ];
             
@@ -84,8 +122,8 @@
             let failed = 0;
             
             tests.forEach(test => {
-                const resultado = calcularDiasHabiles(test.fechaInicio, test.fechaFin);
-                const detalle = obtenerDetalleCalculo(test.fechaInicio, test.fechaFin);
+                const resultado = calcularDiasHabiles(test.fechaInicio, test.fechaFin, test.diasSemana || null);
+                const detalle = obtenerDetalleCalculo(test.fechaInicio, test.fechaFin, test.diasSemana || null);
                 const exito = resultado === test.esperado;
                 
                 if (exito) passed++;
@@ -95,6 +133,7 @@
                     <div class="test-result ${exito ? 'success' : 'error'}">
                         <h3>${exito ? '✅' : '❌'} ${test.nombre}</h3>
                         <p><strong>Fechas:</strong> ${test.fechaInicio} al ${test.fechaFin}</p>
+                        ${test.diasSemana ? `<p class="detail"><strong>Días de clase (números 0-6):</strong> ${test.diasSemana.join(', ')}</p>` : ''}
                         <p><strong>Esperado:</strong> ${test.esperado} días hábiles</p>
                         <p><strong>Obtenido:</strong> ${resultado} días hábiles</p>
                         <p class="detail">${test.detalle}</p>
@@ -125,6 +164,35 @@
         
         // Ejecutar tests al cargar la página
         runTests();
+
+        // Inicializar UI interactiva
+        function getSelectedDiasSemana() {
+            const boxes = Array.from(document.querySelectorAll('.dia-clase'));
+            // Valores almacenados como números 0-6 (0=Domingo)
+            return boxes.filter(b => b.checked).map(b => Number(b.value));
+        }
+
+        document.getElementById('ui-calcular').addEventListener('click', () => {
+            const inicio = document.getElementById('ui-fecha-inicio').value;
+            const fin = document.getElementById('ui-fecha-fin').value;
+            const horaInicio = document.getElementById('ui-hora-inicio').value;
+            const horaFin = document.getElementById('ui-hora-fin').value;
+            if (!inicio || !fin) {
+                document.getElementById('interactive-result').innerText = 'Selecciona fecha inicio y fin.';
+                return;
+            }
+            const dias = getSelectedDiasSemana();
+            const resultado = calcularDiasHabiles(inicio, fin, dias.length ? dias : null);
+            const detalle = obtenerDetalleCalculo(inicio, fin, dias.length ? dias : null);
+            let horasInfo = null;
+            if (horaInicio && horaFin) {
+                horasInfo = calcularHorasHabiles(inicio, fin, horaInicio, horaFin, dias.length ? dias : null);
+            }
+            document.getElementById('interactive-result').innerHTML = `
+                <div><strong>Días hábiles contados:</strong> ${resultado}</div>
+                ${formatearInfoCalculo(detalle, horasInfo)}
+            `;
+        });
     </script>
 </body>
 </html>
