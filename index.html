@@ -4184,6 +4184,8 @@
                                         <th>Instructor</th>
                                         <th>Ambiente</th>
                                         <th>Horas</th>
+                                        <th>Horario</th>
+                                        <th>Días</th>
                                         <th>Fecha Inicio</th>
                                         <th>Fecha Fin</th>
                                         <th>Estado</th>
@@ -4262,6 +4264,8 @@
                         <td>${instructor?.nombre || 'N/A'}</td>
                         <td>${ambiente?.nombre || 'N/A'}</td>
                         <td>${p.horas}h</td>
+                        <td>${p.hora_inicio ? p.hora_inicio : ''}${p.hora_inicio && p.hora_fin ? ' - ' : ''}${p.hora_fin ? p.hora_fin : ''}</td>
+                        <td>${formatDiasPreview(p.dias_semana)}</td>
                         <td>${p.fecha_inicio || 'N/A'}</td>
                         <td>${p.fecha_fin || 'N/A'}</td>
                         <td>${getEstadoBadge(p.estado)}</td>
@@ -4326,6 +4330,15 @@
                     'error'
                 );
             }
+        }
+
+        // Formatea el array de días (0=Dom..6=Sáb) a una cadena corta (Lun, Mar...)
+        function formatDiasPreview(dias) {
+            if (!dias || !Array.isArray(dias) || dias.length === 0) return '';
+            const map = {0:'Dom',1:'Lun',2:'Mar',3:'Mié',4:'Jue',5:'Vie',6:'Sáb'};
+            // ordenar por día de la semana
+            const sorted = Array.from(new Set(dias.map(Number))).sort((a,b)=>a-b);
+            return sorted.map(d=>map[d]||d).join(', ');
         }
 
         // Función para convertir de 12 horas a 24 horas
