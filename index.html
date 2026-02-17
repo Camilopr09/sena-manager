@@ -5762,5 +5762,83 @@
 
         window.addEventListener('load', initApp);
     </script>
+        <!-- Calculadora interactiva de días hábiles integrada -->
+        <style>
+            .calc-card { background: var(--bg-white); padding:16px; border-radius:8px; box-shadow: var(--shadow-sm); margin: 20px 0; }
+            .calc-row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+            .calc-row label { font-size:14px; color:var(--text-secondary); }
+        </style>
+
+        <section id="calc-dias-habiles-app" class="calc-card" aria-labelledby="calc-dias-title">
+            <h3 id="calc-dias-title" style="margin:0 0 8px 0; color:var(--sena-blue);">📅 Calculadora de Días Hábiles</h3>
+            <div style="display:grid; gap:10px;">
+                <div class="calc-row">
+                    <label><strong>Fecha inicio:</strong> <input type="date" id="ui-fecha-inicio"></label>
+                    <label><strong>Fecha fin:</strong> <input type="date" id="ui-fecha-fin"></label>
+                    <label><strong>Hora inicio:</strong> <input type="time" id="ui-hora-inicio" value="08:00"></label>
+                    <label><strong>Hora fin:</strong> <input type="time" id="ui-hora-fin" value="17:00"></label>
+                    <button id="ui-calcular" style="padding:8px 12px; border-radius:8px; background:var(--sena-green); color:white; border:0; cursor:pointer;">Calcular</button>
+                </div>
+                <div>
+                    <strong>Días de clase:</strong>
+                    <div style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;">
+                        <label><input type="checkbox" class="dia-clase" value="1" checked> Lun</label>
+                        <label><input type="checkbox" class="dia-clase" value="2" checked> Mar</label>
+                        <label><input type="checkbox" class="dia-clase" value="3" checked> Mié</label>
+                        <label><input type="checkbox" class="dia-clase" value="4" checked> Jue</label>
+                        <label><input type="checkbox" class="dia-clase" value="5" checked> Vie</label>
+                        <label><input type="checkbox" class="dia-clase" value="6"> Sáb</label>
+                        <label><input type="checkbox" class="dia-clase" value="0"> Dom</label>
+                    </div>
+                </div>
+                <div id="interactive-result" style="font-size:14px; color:var(--text-secondary);"></div>
+            </div>
+        </section>
+
+        <script>
+            // Funciones de UI integradas que usan dias-habiles-colombia.js
+            function getSelectedDiasSemana() {
+                const boxes = Array.from(document.querySelectorAll('#calc-dias-habiles-app .dia-clase'));
+                return boxes.filter(b => b.checked).map(b => Number(b.value));
+            }
+
+            function autoCalculateMain() {
+                const inicioEl = document.getElementById('ui-fecha-inicio');
+                const finEl = document.getElementById('ui-fecha-fin');
+                const horaInicioEl = document.getElementById('ui-hora-inicio');
+                const horaFinEl = document.getElementById('ui-hora-fin');
+                const output = document.getElementById('interactive-result');
+                const inicio = inicioEl.value;
+                const fin = finEl.value;
+                if (!inicio || !fin) {
+                    output.innerText = 'Selecciona fecha inicio y fin.';
+                    return;
+                }
+                const dias = getSelectedDiasSemana();
+                const resultado = calcularDiasHabiles(inicio, fin, dias.length ? dias : null);
+                const detalle = obtenerDetalleCalculo(inicio, fin, dias.length ? dias : null);
+                let horasInfo = null;
+                if (horaInicioEl.value && horaFinEl.value) {
+                    horasInfo = calcularHorasHabiles(inicio, fin, horaInicioEl.value, horaFinEl.value, dias.length ? dias : null);
+                }
+                output.innerHTML = `<div><strong>Días hábiles contados:</strong> ${resultado}</div>` + formatearInfoCalculo(detalle, horasInfo);
+            }
+
+            (function setDefaultsMain() {
+                const inicioEl = document.getElementById('ui-fecha-inicio');
+                const finEl = document.getElementById('ui-fecha-fin');
+                const today = new Date();
+                const later = new Date(); later.setDate(today.getDate() + 7);
+                function toInput(d) { const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
+                if (!inicioEl.value) inicioEl.value = toInput(today);
+                if (!finEl.value) finEl.value = toInput(later);
+            })();
+
+            document.getElementById('ui-calcular').addEventListener('click', autoCalculateMain);
+            Array.from(document.querySelectorAll('#calc-dias-habiles-app .dia-clase')).forEach(cb => cb.addEventListener('change', autoCalculateMain));
+            ['ui-fecha-inicio','ui-fecha-fin','ui-hora-inicio','ui-hora-fin'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('change', autoCalculateMain); });
+            // cálculo inicial
+            autoCalculateMain();
+        </script>
 </body>
 </html>
