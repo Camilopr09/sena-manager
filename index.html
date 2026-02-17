@@ -4506,6 +4506,20 @@
                             </select>
                         </div>
                         
+                        <!-- Selección de días de la semana para la programación -->
+                        <div class="form-group">
+                            <label class="form-label">Días de clase</label>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
+                                <label><input type="checkbox" class="programacion-dia-clase" value="1" checked> Lun</label>
+                                <label><input type="checkbox" class="programacion-dia-clase" value="2" checked> Mar</label>
+                                <label><input type="checkbox" class="programacion-dia-clase" value="3" checked> Mié</label>
+                                <label><input type="checkbox" class="programacion-dia-clase" value="4" checked> Jue</label>
+                                <label><input type="checkbox" class="programacion-dia-clase" value="5" checked> Vie</label>
+                                <label><input type="checkbox" class="programacion-dia-clase" value="6"> Sáb</label>
+                                <label><input type="checkbox" class="programacion-dia-clase" value="0"> Dom</label>
+                            </div>
+                        </div>
+
                         <!-- Calculadora de Días Hábiles -->
                         <div id="calculadoraDiasHabiles" style="margin-top: 16px;"></div>
                         
@@ -4832,6 +4846,14 @@
                 hora_fin: horaFin,
                 estado
             };
+            
+            // Añadir días de la semana seleccionados (si existen) para la programación
+            const diasSeleccionados = Array.from(document.querySelectorAll('.programacion-dia-clase'))
+                .filter(cb => cb.checked)
+                .map(cb => Number(cb.value));
+            if (diasSeleccionados.length) {
+                progData.dias_semana = diasSeleccionados; // guardamos array de números 0-6
+            }
 
             try {
                 if (id) {
@@ -4948,6 +4970,12 @@
             
             // Configurar event listeners y actualizar calculadora
             configurarCalculadoraDiasHabiles();
+            // Si la programación tiene días guardados, preseleccionarlos
+            if (Array.isArray(prog.dias_semana)) {
+                Array.from(document.querySelectorAll('.programacion-dia-clase')).forEach(cb => {
+                    cb.checked = prog.dias_semana.includes(Number(cb.value));
+                });
+            }
             actualizarCalculoDiasHabiles();
         }
 
@@ -4995,6 +5023,8 @@
                     elemento.addEventListener('change', actualizarCalculoDiasHabiles);
                 }
             });
+            // Listeners para checkboxes de días
+            Array.from(document.querySelectorAll('.programacion-dia-clase')).forEach(cb => cb.addEventListener('change', actualizarCalculoDiasHabiles));
         }
         
         /**
@@ -5046,13 +5076,18 @@
                 return;
             }
             
-            // Calcular días hábiles
-            const detalle = obtenerDetalleCalculo(fechaInicio, fechaFin);
+            // Obtener días seleccionados (0=Dom..6=Sáb)
+            const diasSeleccionados = Array.from(document.querySelectorAll('.programacion-dia-clase'))
+                .filter(cb => cb.checked)
+                .map(cb => Number(cb.value));
+
+            // Calcular días hábiles (respetando días seleccionados si los hay)
+            const detalle = obtenerDetalleCalculo(fechaInicio, fechaFin, diasSeleccionados.length ? diasSeleccionados : null);
             
             // Si hay horarios completos, calcular horas hábiles
             let horasInfo = null;
             if (horaInicio && horaFin && horaFin > horaInicio) {
-                horasInfo = calcularHorasHabiles(fechaInicio, fechaFin, horaInicio, horaFin);
+                horasInfo = calcularHorasHabiles(fechaInicio, fechaFin, horaInicio, horaFin, diasSeleccionados.length ? diasSeleccionados : null);
             }
             
             // Mostrar resultados
