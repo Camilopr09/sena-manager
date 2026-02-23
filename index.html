@@ -1832,6 +1832,10 @@
         // USUARIOS - Se cargan desde Supabase
         let USERS = [];
 
+        function isCurrentUserAdmin() {
+            return currentUser && currentUser.permisos === 'admin';
+        }
+
         
         // ========== SUPABASE INITIALIZATION ==========
         async function initSupabase() {
@@ -4279,7 +4283,10 @@
                             <div class="action-buttons" style="flex-direction: column; gap: 6px;">
                                 <button class="btn btn-sm btn-secondary" onclick="editProgramacion(${p.id})"><i data-lucide="edit-2" style="width: 14px; height: 14px;"></i></button>
                                 <button class="btn btn-sm btn-success" onclick="reenviarCorreoProgramacion(${p.id})" title="Enviar correo al instructor"><i data-lucide="mail" style="width: 14px; height: 14px;"></i></button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteProgramacion(${p.id})"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
+                                ${isCurrentUserAdmin()
+                                    ? `<button class="btn btn-sm btn-danger" onclick="deleteProgramacion(${p.id})"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>`
+                                    : ''
+                                }
                             </div>
                         </td>
                     </tr>
@@ -4908,6 +4915,11 @@
         }
 
         async function deleteProgramacion(id) {
+            if (!isCurrentUserAdmin()) {
+                await showCustomAlert('No tienes permisos para eliminar programaciones. Solo administradores.', 'warning');
+                return;
+            }
+
             const confirmDelete = await showCustomConfirm(
                 '¿Eliminar esta programación?',
                 'Eliminar Programación'
