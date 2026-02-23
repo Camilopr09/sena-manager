@@ -3086,6 +3086,8 @@
             const totalAmbientes = ambientes.length;
             const fichasActivas = fichas.filter(f => f.estado === 'Activo').length;
             const horasTotalesProgramadas = programaciones.reduce((sum, p) => sum + p.horas, 0);
+            const programacionesPendientesPorProgramar = programaciones.filter(p => p.estado === 'Pendiente por programar').length;
+            const programacionesSubidasASofia = programaciones.filter(p => p.estado === 'Subida a Sofia').length;
             
             let competenciasPendientes = 0;
             competencias.forEach(comp => {
@@ -3128,6 +3130,16 @@
                             <div class="card-icon"><i data-lucide="check-circle"></i></div>
                             <div class="card-value">${fichasActivas}</div>
                             <div class="card-label">Fichas Activas</div>
+                        </div>
+                        <div class="dashboard-card" onclick="showSection('programacion')">
+                            <div class="card-icon"><i data-lucide="hourglass"></i></div>
+                            <div class="card-value">${programacionesPendientesPorProgramar}</div>
+                            <div class="card-label">Programaciones Pendiente por Programar</div>
+                        </div>
+                        <div class="dashboard-card" onclick="showSection('programacion')">
+                            <div class="card-icon"><i data-lucide="upload"></i></div>
+                            <div class="card-value">${programacionesSubidasASofia}</div>
+                            <div class="card-label">Programaciones Subidas a Sofia</div>
                         </div>
                     </div>
                     
